@@ -1,2 +1,2 @@
 # Apto
-Discord Hack Week Moderation Bot
+A Discord Hack Week Moderation Bot
