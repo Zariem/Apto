@@ -1,5 +1,6 @@
 
 const config = require('../config.json');
+const serverLayout = require('./server_layout.js')
 
 const executeCommand = async (bot, message) => {
 
@@ -14,6 +15,10 @@ const executeCommand = async (bot, message) => {
 
         if (command === "ping") {
             message.channel.send("Pong!");
+        }
+
+        if (command === "test") {
+            serverLayout.save(bot, message);
         }
     }
 
