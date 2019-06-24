@@ -15,7 +15,7 @@ apto.on('ready', () => {
     console.log("Apto is ready!");
 });
 
-apto.on('message', () => {
+apto.on('message', message => {
 
     // ignore messages sent by self or any other bot
     if (message.author.bot) return;
