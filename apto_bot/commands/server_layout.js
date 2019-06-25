@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
+const fs = require('fs');
 
-const saveServerLayout = async (bot, message, verbose=true) => {
+const saveServerLayout = async (bot, message, verbose=false) => {
     let guild = message.guild;
     if (!guild) {
         message.channel.send("Error. Please send this message over a text channel on the target server.");
@@ -14,7 +15,7 @@ const saveServerLayout = async (bot, message, verbose=true) => {
         region: guild.region,
 
         defaultMessageNotifications: guild.defaultMessageNotifications, // ALL or MENTIONS
-        embedEnabled: guild.embedEnabled,
+        embedEnabled: false,
         explicitContentFilter: guild.explicitContentFilter,
         mfaLevel: guild.mfaLevel, // NONE or ELEVATED
         verificationLevel: guild.verificationLevel, // NONE up to Verify with phone
@@ -35,6 +36,7 @@ const saveServerLayout = async (bot, message, verbose=true) => {
     let guildEmbed = await guild.fetchEmbed();
     let guildEmbedChannelID = undefined;
     if (guildEmbed.channel) {
+        guildObject.embedEnabled = true;
         if (guildEmbed.channel instanceof Discord.Guild) {
             guildEmbedChannelID = guild.defaultChannelID;
         } else if (guildEmbed.channel instanceof Discord.Channel) {
@@ -198,7 +200,10 @@ const saveServerLayout = async (bot, message, verbose=true) => {
     }
 
     if (verbose) message.channel.send("Done!");
-    console.log(guildObject);
+    var guildData = JSON.stringify(guildObject);
+    let filename = 'server_' + guild.id + '.json';
+    await fs.writeFile(filename, guildData, (error) => console.log("Error on fs.writefile: " + error));
+    message.channel.send("There you go!", {files:[filename]});
 }
 
 module.exports.save = saveServerLayout;
