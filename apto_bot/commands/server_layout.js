@@ -178,8 +178,8 @@ const saveServerLayout = async (bot, message, verbose=true) => {
                 emojiRolesArray.push(roleIDToLocalID[emojiRole[0]]);
             }
             emojiObject.roles = emojiRolesArray;
+            guildObject.emojis.push(emojiObject);
         }
-        guildObject.emojis.push(emojiObject);
     }
 
     if (verbose) message.channel.send("Gathering info on bans...");
@@ -187,7 +187,7 @@ const saveServerLayout = async (bot, message, verbose=true) => {
     let bans = await guild.fetchBans(true);
     for (let ban of bans) {
         ban = ban[1];
-        banObject = {
+        let banObject = {
             userID: ban.user.id,
             username: ban.user.username,
             discriminator: ban.user.discriminator,
@@ -196,7 +196,7 @@ const saveServerLayout = async (bot, message, verbose=true) => {
         };
         guildObject.bans.push(banObject);
     }
-    
+
     if (verbose) message.channel.send("Done!");
     console.log(guildObject);
 }
