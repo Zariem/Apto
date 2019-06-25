@@ -56,7 +56,8 @@ const saveServerLayout = async (bot, message, verbose=true) => {
     let localRoleID = 0;
     let roleIDToLocalID = {}; // look up table
 
-    for (const role of roles) {
+    for (let role of roles) {
+        role = role[1];
         if (verbose) message.channel.send("role: " + role.name);
         if (!role.managed) { // don't clone integrated bot roles
             roleIDToLocalID[role.id] = localRoleID;
@@ -89,11 +90,12 @@ const saveServerLayout = async (bot, message, verbose=true) => {
 
     // fill the lookup table
     for (const channel of channels) {
-        channelIDToLocalID[channel.id] = localChannelID;
+        channelIDToLocalID[channel[0]] = localChannelID;
         localChannelID++;
     }
 
-    for (const channel of channels) {
+    for (let channel of channels) {
+        channel = channel[1];
         if (verbose) message.channel.send("- adding #" + channel.name);
         // channel type is either "text", "voice", "category"
         // if we try to clone a verified server, it might be "news" or "store"
@@ -132,17 +134,17 @@ const saveServerLayout = async (bot, message, verbose=true) => {
             channelObject.userLimit = channel.userLimit;
         } else if (channel.type === "category") {
             let children = channel.children;
-            let childArray = [];
-            for (let child in children) {
-                childArray.push(channelIDToLocalID[child.id]);
+            channelObject.children = [];
+            for (let child of children) {
+                channelObject.children.push(channelIDToLocalID[child[0]]);
             }
-            channelObject.children = childArray;
         }
 
         // add permission overwrites
         let overwrites = channel.permissionOverwrites;
         let overwriteArray = [];
-        for (let overwrite in overwrites) {
+        for (let overwrite of overwrites) {
+            overwrite = overwrite[1];
             overwriteArray.push({
                 id: overwrite.id, // userid or roleid
                 type: overwrite.type,
