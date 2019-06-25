@@ -58,8 +58,8 @@ const saveServerLayout = async (bot, message, verbose=true) => {
 
     for (let role of roles) {
         role = role[1];
-        if (verbose) message.channel.send("role: " + role.name);
         if (!role.managed) { // don't clone integrated bot roles
+            if (verbose) message.channel.send("- adding role: " + role.name);
             roleIDToLocalID[role.id] = localRoleID;
             let roleObject = {
                 id: localRoleID, // don't store the actual role id
@@ -78,7 +78,7 @@ const saveServerLayout = async (bot, message, verbose=true) => {
             guildObject.roles.push(roleObject);
             localRoleID++;
         } else {
-            if (verbose) message.channel.send("Did not add, since it was a bot or integrated role.");
+            if (verbose) message.channel.send("- did not add role " + role.name + ", since it was a bot or integrated role.");
         }
     }
 
@@ -156,13 +156,49 @@ const saveServerLayout = async (bot, message, verbose=true) => {
 
         guildObject.channels.push(channelObject);
     }
+
+    if (verbose) message.channel.send("Gathering emoji infos...");
+
+    let emojis = guild.emojis;
+    for (let emoji of emojis) {
+        emoji = emoji[1];
+        if (emoji.managed) {
+            if (verbose) message.channel.send("- skipping emoji: " + emoji.name + " as it is managed by an external service.");
+        } else {
+            if (verbose) message.channel.send("- adding emoji: " + emoji.name);
+            let emojiObject = {
+                animated: emoji.animated,
+                name: emoji.name,
+                url: emoji.url
+            };
+
+            let emojiRoles = emoji.roles; // all roles for which an emoji is active, empty if all
+            let emojiRolesArray = [];
+            for (let emojiRole of emojiRoles) {
+                emojiRolesArray.push(roleIDToLocalID[emojiRole[0]]);
+            }
+            emojiObject.roles = emojiRolesArray;
+        }
+        guildObject.emojis.push(emojiObject);
+    }
+
+    if (verbose) message.channel.send("Gathering info on bans...");
+
+    let bans = await guild.fetchBans(true);
+    for (let ban of bans) {
+        ban = ban[1];
+        banObject = {
+            userID: ban.user.id,
+            username: ban.user.username,
+            discriminator: ban.user.discriminator,
+            isBot: ban.user.bot,
+            reason: ban.reason
+        };
+        guildObject.bans.push(banObject);
+    }
+    
     if (verbose) message.channel.send("Done!");
     console.log(guildObject);
-
-    // emojis
-
-    // bans
-    //let bans = await guild.fetchBans(true)
 }
 
 module.exports.save = saveServerLayout;
