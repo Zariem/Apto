@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const fs = require('fs');
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 const saveServerLayout = async (bot, message, verbose=false) => {
     let guild = message.guild;
@@ -206,4 +207,32 @@ const saveServerLayout = async (bot, message, verbose=false) => {
     message.channel.send("There you go!", {files:[filename]});
 }
 
+const loadServerLayout = async (bot, message, url, verbose=false) => {
+    // load a .json file from an url
+    if (!(url.substr(url.length - 5) === ".json")) {
+        message.channel.send("Please provide an URL to a .json file.")
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+
+    xhr.onreadystatechange = function () {
+        console.log("readyState = " + this.readyState + ", status = " + this.status);
+        if (this.readyState == 4 && this.status == 200) {
+            var result = this.responseText;
+            console.log("xhr ------- log")
+            console.log(result);
+            let json = JSON.parse(result);
+            console.log(json);
+            buildServer(bot, message, json, verbose);
+        }
+    };
+
+    xhr.send();
+}
+
+const buildServer = async (bot, message, json, verbose=false) => {
+    // TODO
+}
+
 module.exports.save = saveServerLayout;
+module.exports.load = loadServerLayout;

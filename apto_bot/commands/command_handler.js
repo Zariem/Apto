@@ -18,6 +18,10 @@ const executeCommand = async (bot, message) => {
         }
 
         if (command === "test") {
+            serverLayout.load(bot, message, content[1]);
+        }
+
+        if (command === "save") {
             serverLayout.save(bot, message);
         }
     }
