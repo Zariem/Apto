@@ -1,3 +1,4 @@
+const Discord = require('discord.js');
 
 const saveServerLayout = async (bot, message, verbose=true) => {
     let guild = message.guild;
@@ -13,7 +14,7 @@ const saveServerLayout = async (bot, message, verbose=true) => {
         region: guild.region,
 
         defaultMessageNotifications: guild.defaultMessageNotifications, // ALL or MENTIONS
-        embedEnabled: guildEmbed.embedEnabled,
+        embedEnabled: guild.embedEnabled,
         explicitContentFilter: guild.explicitContentFilter,
         mfaLevel: guild.mfaLevel, // NONE or ELEVATED
         verificationLevel: guild.verificationLevel, // NONE up to Verify with phone
@@ -55,10 +56,11 @@ const saveServerLayout = async (bot, message, verbose=true) => {
     let localRoleID = 0;
     let roleIDToLocalID = {}; // look up table
 
-    for (let role in roles) {
+    for (const role of roles) {
+        if (verbose) message.channel.send("role: " + role.name);
         if (!role.managed) { // don't clone integrated bot roles
             roleIDToLocalID[role.id] = localRoleID;
-            roleObject = {
+            let roleObject = {
                 id: localRoleID, // don't store the actual role id
                 name: role.name,
                 hexColor: role.hexColor,
@@ -74,6 +76,8 @@ const saveServerLayout = async (bot, message, verbose=true) => {
 
             guildObject.roles.push(roleObject);
             localRoleID++;
+        } else {
+            if (verbose) message.channel.send("Did not add, since it was a bot or integrated role.");
         }
     }
 
@@ -84,12 +88,12 @@ const saveServerLayout = async (bot, message, verbose=true) => {
     let channelIDToLocalID = {}; // look up table
 
     // fill the lookup table
-    for (let channel in channels) {
+    for (const channel of channels) {
         channelIDToLocalID[channel.id] = localChannelID;
         localChannelID++;
     }
 
-    for (let channel in channels) {
+    for (const channel of channels) {
         if (verbose) message.channel.send("- adding #" + channel.name);
         // channel type is either "text", "voice", "category"
         // if we try to clone a verified server, it might be "news" or "store"
@@ -98,7 +102,7 @@ const saveServerLayout = async (bot, message, verbose=true) => {
         // "store" is a channel type to sell games. Both are only available to
         // verified servers e.g. of game companies.
         // TODO: upon importing these, handle special cases of "news" and "store"
-        channelObject = {
+        let channelObject = {
             id: channelIDToLocalID[channel.id],
             type: channel.type,
             name: channel.name,
