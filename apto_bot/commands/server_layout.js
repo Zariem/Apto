@@ -62,8 +62,8 @@ const saveServerLayout = async (bot, message, verbose=false) => {
 
     for (let role of roles) {
         role = role[1];
-        if (!role.managed || role.id === bot.user.id) { // don't clone integrated bot roles unless it's Apto's
-            let tempID = (role.managed) ? -1 : localRoleID; // -1 for Apto, and the current local role id for the rest
+        if ((!role.managed) || (role.members.get(bot.user.id))) { // don't clone integrated bot roles unless it's Apto's
+            let tempID = (role.managed) ? -1 : localRoleID; // id is -1 for Apto, and the current local role id for the rest
             if (verbose) message.channel.send("- adding role: " + role.name);
             roleIDToLocalID[role.id] = tempID;
             let roleObject = {
