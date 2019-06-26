@@ -33,6 +33,7 @@ const saveServerLayout = async (bot, message, verbose=false) => {
     if (guild.afkTimeout) guildObject.afkTimeout = guild.afkTimeout;
     if (guild.splashURL) guildObject.splashURL = guild.splashURL;
 
+    // TODO: put this after channel export, because the channel id must be a local id.
     // get info on the guild embed (Server Widget)
     let guildEmbed = await guild.fetchEmbed();
     let guildEmbedChannelID = undefined;
@@ -232,6 +233,26 @@ const loadServerLayout = async (bot, message, url, verbose=false) => {
 
 const buildServer = async (bot, message, json, verbose=false) => {
     // TODO
+    // TODO: add validity check of data
+}
+
+// TODO: check for what data we overwrite and change
+const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
+    const reason = "Apto Server Layout Import";
+    let guild = message.guild;
+    await guild.setName(guildData.name, reason);
+    await guild.setRegion(guildData.region, reason);
+    await guild.setDefaultMessageNotifications(guildData.defaultMessageNotifications, reason);
+    await guild.setExplicitContentFilter(guildData.explicitContentFilter, reason);
+    await guild.setVerificationLevel(guildData.verificationLevel, reason);
+    guild.mfaLevel = guildData.mfaLevel;
+    guild.features = guildData.features;
+
+    if (guildData.iconURL) await guild.setIcon(guildData.iconURL, reason);
+    if (guildData.afkTimeout) await guild.setAFKTimeout(guildData.afkTimeout, reason);
+    if (guildData.splashURL) await guild.setSplash(guildData.splashURL, reason);
+
+    // TODO: guild embed can only be imported once the channels are imported
 }
 
 module.exports.save = saveServerLayout;
