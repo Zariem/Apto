@@ -12,6 +12,34 @@ Oh, and I can ping roles for you, but only if you have the permissions to do so.
 And should you ever need it, I can also offer you a freeze or lockdown mode to
 immediately pause all chats and solve terrible issues at hand.
 
+Ver 2. Edited version! 
+
+Hi, my name is Apto!
+
+I am here to help you set up, manage, and test your server. 
+I can copy and paste channels, roles, emojis, as well as ban info to new servers, 
+quickly create roles for your community needs, and show you what you can do with these roles! 
+Muting and banning trolls and troublemakers is my second job, 
+so you don't have to worry about keeping a constant eye on everything at once. 
+I am here to watch your back!
+Should you ever need to restrict the chats into text-,image- or gif-only mode, it would be my pleasure to assist you!
+I can ensure clear role restrictions. 
+Freezing and locking down a channel will be made easy in case of emergencies or fun viewer-only events. 
+
+Let me assist in creating a safe and enjoyable space for you and your community!
+
++ Ideas about random single messages to add on the website to advertize: +
+
+1. Hi, I'm Apto! Let's create a safe and enjoyable space for your community!
+2. Hi, I'm Apto. I'm here to help you set up, manage and test your server! 
+3. Apto will act as a moderator bot to protect you from those pesky troublemakers and trolls!
+4. Clear role restrictions, chat-modes for gifs,images or text, lockable content and more! 
+5. Clear role instructions, implementation and restrictions based on your needs
+6. Need help setting up and operating a functional and safe server? Apto is here for you! 
+7. Keep your server safe and easily manageable with Apto! 
+8. Temporary muting, bans and restrictions easily manageable for emergencies or fun viewer-only events! 
+9. --> more incoming when I get home and think on it :) Add your own if you have ideas! 
+
 
 Planned or implemented features: (in this order)
 - export and import:
