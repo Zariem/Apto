@@ -149,12 +149,16 @@ const saveServerLayout = async (bot, message, verbose=false) => {
         let overwriteArray = [];
         for (let overwrite of overwrites) {
             overwrite = overwrite[1];
-            overwriteArray.push({
-                id: overwrite.id, // userid or roleid
-                type: overwrite.type,
+            let isRole =  (overwrite.type === 'role');
+            let overwriteID = (isRole) ? roleIDToLocalID(overwrite.id) : overwrite.id;
+            let overwriteObject = {
+                id: overwriteID, // userid or (local) roleid
+                type: overwrite.type, // 'member' or 'role'
                 allow: overwrite.allow, // bitfield of all allowed permissions
                 deny: overwrite.deny // bitfield of all denied permissions
-            });
+            };
+
+            overwriteArray.push(overwriteObject);
         }
         channelObject.permissionOverwrites = overwriteArray;
 
@@ -254,6 +258,98 @@ const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
 
     // TODO: guild embed can only be imported once the channels are imported
 }
+
+// TODO: ensure merging of roles, especially the @everyone role
+// TODO: role positioning if other roles already exist
+const importRoles = async (bot, nessage, guildRoleData, verbose=false) => {
+    // guildRoleData is guildData.roles, an array of objects that describe roles
+    const reason = "Apto Role Import";
+    let guild = message.guild;
+    resultingRoles = {}; // map internal role ID to the role IDs of created roles
+    for (let role of guildRoleData) {
+        discordRole = await guild.createRole({
+                                        name: role.name,
+                                        color: role.hexColor,
+                                        hoist: role.hoist,
+                                        position: role.position,
+                                        permissions: role.permissions,
+                                        mentionable: role.mentionable
+                                    }, reason);
+        // TODO: set default role
+        resultingRoles[role.id] = discordRole.id;
+    }
+    return resultingRoles;
+}
+
+const importChannels = async (bot, message, guildChannelData, roleIDMap=undefined, verbose=false) => {
+    // guildChannelData is guildData.channels, an array of objects that describe channels
+    // if roleIDMap is undefined we will not import channel permissions
+    const reason = "Apto Channel Import";
+    let guild = message.guild;
+    resultingChannels = {}; // a map from local channel IDs to the server's channel Snowflakes
+    channelsWithoutParent = []; // a list of all local channel's ids which have not yet assigned their parent
+    for (let channel of guildChannelData) {
+
+        let channelData = {
+            type: channel.type,
+            position: channel.position,
+        }
+        if (!(channel.topic == undefined)) channelData.topic = channel.topic;
+        if (!(channel.nsfw == undefined)) channelData.nsfw = channel.nsfw;
+        if (!(channel.bitrate == undefined)) channelData.bitrate = channel.bitrate;
+        if (!(channel.userLimit == undefined)) channelData.userLimit = channel.userLimit;
+        if (!(channel.rateLimitPerUser == undefined)) channelData.rateLimitPerUser = channel.rateLimitPerUser;
+        if (!(channel.parentID == undefined)) {
+            if (resultingChannels[channel.parentID]) {
+                // parent channel has already been created (should normally be the case)
+                channelData.parent = resultingChannels[channel.parentID];
+            } else {
+                channelsWithoutParent.push(channel.id);
+            }
+        }
+        // add permission overwrites
+        // if roleIDMap is not specified, don't add role permissions
+        // in any case, add user permissions (TODO: check if it works even if these users are not (yet) on that server)
+        let permissions = [];
+        for (let overwrite of channel.permissionOverwrites) {
+            let key = undefined;
+            if (overwrite.type === 'member') {
+                key = overwrite.id;
+                let member = guild.members.get(key);
+                if (!member) {
+                    message.channel.send("Could not add permission overwrites for a user in channel " +
+                                         channel.name + " because this user is not in this server.");
+                    key = undefined;
+                }
+            } else if (roleIDMap) {
+                key = roleIDMap[overwrite.id];
+            }
+            if (key) {
+                let overwriteValues = {
+                    id: key,
+                    allow: overwrite.allow,
+                    deny: overwrite.deny
+                };
+                permissions.push(overwriteValues);
+            }
+        }
+        channelData.permissionOverwrites = permissions;
+
+        // TODO: does this work as intended?
+        discordChannel = await guild.createChannel(channel.name, channelData, reason);
+        resultingChannels[channel.id] = discordChannel.id;
+    }
+
+    if (channelsWithoutParent.length > 0) {
+        for (let channel of guildChannelData) {
+            if (channelsWithoutParent.includes(channel.id)) {
+                let discordChannel = await bot.channels.get(resultingChannels[channel.id]);
+                discordChannel.setParent(resultingChannels[channel.parentID]);
+            }
+        }
+    }
+}
+
 
 module.exports.save = saveServerLayout;
 module.exports.load = loadServerLayout;
