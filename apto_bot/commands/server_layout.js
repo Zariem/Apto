@@ -270,7 +270,7 @@ const importRoles = async (bot, message, guildRoleData, verbose=false) => {
     // guildRoleData is guildData.roles, an array of objects that describe roles
     const reason = "Apto Role Import";
     let guild = message.guild;
-    resultingRoles = {}; // map internal role ID to the role IDs of created roles
+    let resultingRoles = {}; // map internal role ID to the role IDs of created roles
     for (let role of guildRoleData) {
         let roleData = {name: role.name,
                         color: role.hexColor,
@@ -302,8 +302,8 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
     // if roleIDMap is undefined we will not import channel permissions
     const reason = "Apto Channel Import";
     let guild = message.guild;
-    resultingChannels = {}; // a map from local channel IDs to the server's channel Snowflakes
-    channelsWithoutParent = []; // a list of all local channel's ids which have not yet assigned their parent
+    let resultingChannels = {}; // a map from local channel IDs to the server's channel Snowflakes
+    let channelsWithoutParent = []; // a list of all local channel's ids which have not yet assigned their parent
     for (let channel of guildChannelData) {
 
         let channelData = {
@@ -352,7 +352,7 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
         channelData.permissionOverwrites = permissions;
 
         // TODO: does this work as intended?
-        discordChannel = await guild.createChannel(channel.name, channelData, reason);
+        let discordChannel = await guild.createChannel(channel.name, channelData, reason);
         resultingChannels[channel.id] = discordChannel.id;
     }
 
