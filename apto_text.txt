@@ -1,0 +1,46 @@
+Sample text (subject to change, since not all features might be implemented by the end of hack week):
+
+Hi, my name is Apto!
+I am here to help you set up, manage, and test your server.
+I can copy and paste channels, roles, emojis, as well as ban info to new servers,
+quickly clone roles, and show you which role can do what.
+As a plus, I include features for temporarily muting or banning users,
+and I offer possibilities to restrict chats to image-only, emoji-only, text-only,
+gif-only or reaction-only for certain roles. I can also ensure that some roles
+cannot add reactions.
+Oh, and I can ping roles for you, but only if you have the permissions to do so.
+And should you ever need it, I can also offer you a freeze or lockdown mode to
+immediately pause all chats and solve terrible issues at hand.
+
+
+Planned or implemented features: (in this order)
+- export and import:
+    - export server layout (selectively only channels, roles, emojis, ban info) - (complete export implemented, TODO: selective export)
+    - import server layout (selectively only channels, roles, emojis, ban info) - (TODO: implement)
+    - clone roles (directly on the server, cloning all permissions but giving a new name, good for decorative roles/tags just used for colours and titles) - (TODO: implement)
+    - clone channels (directly on the server, cloning all permissions but giving a new name, good for several channel topics) - (TODO: implement)
+- server info:
+    - list own roles (if you can't click on your user profile for some reason) - (TODO: implement) (not really worth mentioning in the voice acting though)
+    - show role information (who can access and do what in which channel) - (TODO: implement)
+    - show permissions (for a specific user, combines role information of all roles this user has) - (TODO: implement)
+    - show channel information (which role can do what on a specific channel) - (TODO: implement)
+    - list all admins - (TODO: find out how to identify people with admin permissions & implement)
+    - list all nitro boosters - (TODO: find out how to identify the nitro booster role & implement)
+- server management:
+    - temporarily ban a user - (TODO: implement and ensure that it works with export/import)
+    - temporarily mute a user - (TODO: implement)
+    - restrict channels or roles (or roles in channels) to emoji-only, reaction-only, text-only, image-only, gif-only - (TODO: implement)
+    - ability to block new users from joining the server (account needs a minimum ag - (TODO: implement)
+    - server lockdown mode (freeze all channels for users below a given role to quickly identify and remove malicious users or bots or just to take a breather) - (TODO: implement)
+- nice to have:
+    - ping roles (if your role has the permission to do so) - (TODO: implement)
+    - keep tracked of kicked user info - (TODO: implement)
+    - calendar/schedule & sign up for meetings - (TODO: implement)
+    - tracking which user joined with which invite link - (TODO: is this even doable? implement)
+    - chat reminders and conversation inspirations (hydration reminder, "what seems to inspire you today?", TODO: implement)
+
+What I would like to see:
+- Several variations of things Xan can record for an introduction video.
+- Variations of text that we can place on the main page of our bot to quickly show the most powerful features and that advertise our bot.
+- Ideas for things he could say in different scenarios: in lockdown mode for example, he might be like "EVERYBODY! FREEZE!" :D
+    - imagine a small artwork of him being posted in all channels as they get frozen
