@@ -62,17 +62,17 @@ const saveServerLayout = async (bot, message, verbose=false) => {
 
     for (let role of roles) {
         role = role[1];
-        if (!role.managed) { // don't clone integrated bot roles
+        if (!role.managed || role.id === bot.user.id) { // don't clone integrated bot roles unless it's Apto's
+            let tempID = (role.managed) ? -1 : localRoleID; // -1 for Apto, and the current local role id for the rest
             if (verbose) message.channel.send("- adding role: " + role.name);
-            roleIDToLocalID[role.id] = localRoleID;
+            roleIDToLocalID[role.id] = tempID;
             let roleObject = {
-                id: localRoleID, // don't store the actual role id
+                id: tempID, // don't store the actual role id
                 name: role.name,
                 hexColor: role.hexColor,
                 mentionable: role.mentionable,
                 permissions: role.permissions, // number / permissions bitfield
                 hoist: role.hoist, // group them in sidebar? true/false
-                calculatedPosition: role.calculatedPosition,
                 position: role.position
             };
 
@@ -80,7 +80,7 @@ const saveServerLayout = async (bot, message, verbose=false) => {
             roleObject.isDefault = (role.id === guild.defaultRole.id);
 
             guildObject.roles.push(roleObject);
-            localRoleID++;
+            if (!role.managed) localRoleID++; // only increment if it was not Apto's role
         } else {
             if (verbose) message.channel.send("- did not add role " + role.name + ", since it was a bot or integrated role.");
         }
@@ -112,7 +112,6 @@ const saveServerLayout = async (bot, message, verbose=false) => {
             id: channelIDToLocalID[channel.id],
             type: channel.type,
             name: channel.name,
-            calculatedPosition: channel.calculatedPosition,
             position: channel.position
         };
 
@@ -150,15 +149,19 @@ const saveServerLayout = async (bot, message, verbose=false) => {
         for (let overwrite of overwrites) {
             overwrite = overwrite[1];
             let isRole =  (overwrite.type === 'role');
-            let overwriteID = (isRole) ? roleIDToLocalID(overwrite.id) : overwrite.id;
-            let overwriteObject = {
-                id: overwriteID, // userid or (local) roleid
-                type: overwrite.type, // 'member' or 'role'
-                allow: overwrite.allow, // bitfield of all allowed permissions
-                deny: overwrite.deny // bitfield of all denied permissions
-            };
+            let overwriteID = (isRole) ? roleIDToLocalID[overwrite.id] : overwrite.id;
+            if (overwriteID) {
+                let overwriteObject = {
+                    id: overwriteID, // userid or (local) roleid
+                    type: overwrite.type, // 'member' or 'role'
+                    allow: overwrite.allow, // bitfield of all allowed permissions
+                    deny: overwrite.deny // bitfield of all denied permissions
+                };
 
-            overwriteArray.push(overwriteObject);
+                overwriteArray.push(overwriteObject);
+            } else {
+                if (verbose) message.channel.send("--- skipping over special permission overwrites of another bot's role in channel " + channel.name);
+            }
         }
         channelObject.permissionOverwrites = overwriteArray;
 
@@ -235,9 +238,12 @@ const loadServerLayout = async (bot, message, url, verbose=false) => {
     xhr.send();
 }
 
-const buildServer = async (bot, message, json, verbose=false) => {
+const buildServer = async (bot, message, guildData, verbose=false) => {
     // TODO
     // TODO: add validity check of data
+    await importBaseServerInfo(bot, message, guildData, verbose);
+    let resultingRoles = await importRoles(bot, message, guildData.roles, verbose);
+    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose)
 }
 
 // TODO: check for what data we overwrite and change
@@ -259,24 +265,34 @@ const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
     // TODO: guild embed can only be imported once the channels are imported
 }
 
-// TODO: ensure merging of roles, especially the @everyone role
 // TODO: role positioning if other roles already exist
-const importRoles = async (bot, nessage, guildRoleData, verbose=false) => {
+const importRoles = async (bot, message, guildRoleData, verbose=false) => {
     // guildRoleData is guildData.roles, an array of objects that describe roles
     const reason = "Apto Role Import";
     let guild = message.guild;
     resultingRoles = {}; // map internal role ID to the role IDs of created roles
     for (let role of guildRoleData) {
-        discordRole = await guild.createRole({
-                                        name: role.name,
-                                        color: role.hexColor,
-                                        hoist: role.hoist,
-                                        position: role.position,
-                                        permissions: role.permissions,
-                                        mentionable: role.mentionable
-                                    }, reason);
-        // TODO: set default role
-        resultingRoles[role.id] = discordRole.id;
+        let roleData = {name: role.name,
+                        color: role.hexColor,
+                        hoist: role.hoist,
+                        position: role.position,
+                        permissions: role.permissions,
+                        mentionable: role.mentionable};
+        if (role.id == -1) {
+            // merge Apto's role with the integrated role
+            let aptoGuildMember = await guild.members.get(bot.user.id);
+            let aptoIntegratedRole = await aptoGuildMember.roles.find(r => r.managed);
+            aptoIntegratedRole.edit(roleData, reason);
+            resultingRoles[role.id] = bot.user.id;
+        } else if (role.isDefault) {
+            // merge the @everyone role with this server's @everyone role
+            let everyoneRole = guild.defaultRole;
+            everyoneRole.setPermissions(role.permissions);
+            resultingRoles[role.id] = everyoneRole.id;
+        } else {
+            discordRole = await guild.createRole(roleData, reason);
+            resultingRoles[role.id] = discordRole.id;
+        }
     }
     return resultingRoles;
 }
@@ -348,6 +364,7 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
             }
         }
     }
+    return resultingChannels;
 }
 
 
