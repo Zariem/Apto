@@ -40,6 +40,15 @@ Let me assist in creating a safe and enjoyable space for you and your community!
 8. Temporary muting, bans and restrictions easily manageable for emergencies or fun viewer-only events! 
 9. --> more incoming when I get home and think on it :) Add your own if you have ideas! 
 
+Advertisement in 3rd person view:
+
+Hi! This is Apto. 
+
+Apto is a Discord bot that will make Discord moderating and testing different features fun and easy! 
+Need help in making adjustments to the server in a way that makes it easy and safe for you to test it out at your own pace?
+Setting up, managing and testing will be made effortless with this companion on your server! 
+
+
 
 Planned or implemented features: (in this order)
 - export and import:
