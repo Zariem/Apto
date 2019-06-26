@@ -272,26 +272,30 @@ const importRoles = async (bot, message, guildRoleData, verbose=false) => {
     let guild = message.guild;
     let resultingRoles = {}; // map internal role ID to the role IDs of created roles
     for (let role of guildRoleData) {
-        let roleData = {name: role.name,
-                        color: role.hexColor,
-                        hoist: role.hoist,
-                        position: role.position,
-                        permissions: role.permissions,
-                        mentionable: role.mentionable};
-        if (role.id == -1) {
-            // merge Apto's role with the integrated role
-            let aptoGuildMember = await guild.members.get(bot.user.id);
-            let aptoIntegratedRole = await aptoGuildMember.roles.find(r => r.managed);
-            aptoIntegratedRole.edit(roleData, reason);
-            resultingRoles[role.id] = bot.user.id;
-        } else if (role.isDefault) {
-            // merge the @everyone role with this server's @everyone role
-            let everyoneRole = guild.defaultRole;
-            everyoneRole.setPermissions(role.permissions);
-            resultingRoles[role.id] = everyoneRole.id;
+        if (role.editable) {
+            let roleData = {name: role.name,
+                            color: role.hexColor,
+                            hoist: role.hoist,
+                            position: role.position,
+                            permissions: role.permissions,
+                            mentionable: role.mentionable};
+            if (role.id == -1) {
+                // merge Apto's role with the integrated role
+                let aptoGuildMember = await guild.members.get(bot.user.id);
+                let aptoIntegratedRole = await aptoGuildMember.roles.find(r => r.managed);
+                aptoIntegratedRole.edit(roleData, reason);
+                resultingRoles[role.id] = bot.user.id;
+            } else if (role.isDefault) {
+                // merge the @everyone role with this server's @everyone role
+                let everyoneRole = guild.defaultRole;
+                everyoneRole.setPermissions(role.permissions);
+                resultingRoles[role.id] = everyoneRole.id;
+            } else {
+                let discordRole = await guild.createRole(roleData, reason);
+                resultingRoles[role.id] = discordRole.id;
+            }
         } else {
-            discordRole = await guild.createRole(roleData, reason);
-            resultingRoles[role.id] = discordRole.id;
+            message.channel.send("Could not edit role " + role.name + " due to missing permissions.");
         }
     }
     return resultingRoles;
