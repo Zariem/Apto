@@ -47,8 +47,12 @@ Hi! This is Apto.
 Apto is a Discord bot that will make Discord moderating and testing different features fun and easy! 
 Need help in making adjustments to the server in a way that makes it easy and safe for you to test it out at your own pace?
 Setting up, managing and testing will be made effortless with this companion on your server! 
-
-
+Apto will help in adjusting roles and permissions for user friendly experience
+as well as help you manage user-and server info more easily.
+This bot will also keep track of users and have full moderating function allowing temporary or
+permanent muting or ban feature depending on your needs. It can also act as your friendly neighborhood
+watchbot for suspicious activity - or, in turn, be your best friend in chat starting conversations and
+keeping users entertained. Let Apto assist in creating a safe and enjoyable space for you and your community! 
 
 Planned or implemented features: (in this order)
 - export and import:
