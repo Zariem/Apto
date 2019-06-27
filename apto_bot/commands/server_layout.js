@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const fs = require('fs');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const config = require('../config.json');
 
 const saveServerLayout = async (bot, message, verbose=false) => {
     let guild = message.guild;
@@ -18,7 +19,6 @@ const saveServerLayout = async (bot, message, verbose=false) => {
         defaultMessageNotifications: guild.defaultMessageNotifications, // ALL or MENTIONS
         embedEnabled: false,
         explicitContentFilter: guild.explicitContentFilter,
-        mfaLevel: guild.mfaLevel, // NONE or ELEVATED
         verificationLevel: guild.verificationLevel, // NONE up to Verify with phone
         features: guild.features, // TODO: what exactly is that for?
 
@@ -215,10 +215,26 @@ const saveServerLayout = async (bot, message, verbose=false) => {
     message.channel.send("There you go!", {files:[filename]});
 }
 
-const loadServerLayout = async (bot, message, url, verbose=false) => {
+const initImport = async (bot, message, url) => {
+    let embed = new Discord.RichEmbed()
+                           .setTitle("Importing Server Data")
+                           .setColor(0x84c3e0)
+                           .setDescription("Attempting to open the linked .json file...")
+    let sentMessage = await message.channel.send(embed)
+    loadServerLayout(bot, message, url, embed, sentMessage);
+}
+
+const loadServerLayout = async (bot, message, url, embed, sentMessage) => {
     // load a .json file from an url
-    if (!(url.substr(url.length - 5) === ".json")) {
-        message.channel.send("Please provide an URL to a .json file.")
+    if (!url || !(url.substr(url.length - 5) === ".json")) {
+        embed.setDescription(embed.description + "\n\n⚠️No .json file found to open!⚠️\n" +
+                             "*Please ensure that you provide a link to a valid server.json file that I created upon exporting a server.*\n\n" +
+                             "Usage: `" + config.prefix + "import https://url-to.your/server.json`\n*(This link is just an example)*")
+             .addField("⁉️ Tip:", "You can right-click the server file that I sent you upon exporting, and then click `Copy Link` to quickly get access to the link.\n" +
+                                 "If you uploaded your own server.json file, you can also right click it and select `Copy Link` to get the link to the file.\n" +
+                                 "Discord stores all uploaded files internally, it's quite useful.")
+        await sentMessage.edit(embed);
+        return;
     }
     var xhr = new XMLHttpRequest();
     xhr.open("GET", url);
@@ -230,7 +246,7 @@ const loadServerLayout = async (bot, message, url, verbose=false) => {
             console.log("xhr ------- log")
             console.log(result);
             let json = JSON.parse(result);
-            buildServer(bot, message, json, verbose);
+            buildServer(bot, message, json, embed, sentMessage);
         }
     };
 
@@ -257,53 +273,181 @@ const clearChannels = async (bot, message) => {
     }
 }
 
-const buildServer = async (bot, message, guildData, verbose=false) => {
-    // TODO
-    // TODO: add validity check of data
-    //console.log("calling buildServer")
-    //await importBaseServerInfo(bot, message, guildData, verbose);
-    console.log("clearing roles")
+const buildServer = async (bot, message, guildData, embed, sentMessage) => {
+    console.log(guildData);
+    embed.setDescription(embed.description + "\nSuccess!\n\nChecking if the file is valid...");
+    await sentMessage.edit(embed);
+    let isValid = checkDataValidity(guildData);
+    if (!isValid) {
+        embed.setDescription(embed.description + "\n\n😱 Oh no! Looks like something went wrong with the file! I am sorry, I cannot parse it. 😓");
+        await sentMessage.edit(embed);
+        return;
+    }
+    embed.setDescription(embed.description + "\n\n👍 All in order!");
+    await sentMessage.edit(embed);
+    await setTimeout(() => {}, 3000); // wait for 3s
+    embed.setDescription("Importing the main server data!");
+    await sentMessage.edit(embed);
+    console.log("calling buildServer")
+    await importBaseServerInfo(bot, message, guildData, embed, sentMessage);
+    /*console.log("clearing roles")
     await clearRoles(bot, message);
     console.log("clearning channels")
     await clearChannels(bot, message);
     console.log("calling importRoles")
-    let resultingRoles = await importRoles(bot, message, guildData.roles, verbose);
+    let resultingRoles = await importRoles(bot, message, guildData.roles);
     console.log("calling importChannels")
-    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose);
+    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles);
     console.log("calling importEmojis")
-    await importEmojis(bot, message, guildData.emojis, resultingRoles, verbose);
+    await importEmojis(bot, message, guildData.emojis, resultingRoles);
     console.log("importing bans")
-    await importBans(bot, message, guildData.bans, verbose);
+    await importBans(bot, message, guildData.bans);*/
+}
+
+const hasKeys = (obj, keys) => {
+    // keys is an array of strings
+    for (let key of keys) {
+        if (obj[key] == undefined) {
+            console.log("Object invalid, could not find key: " + key);
+            return false;
+        }
+    }
+    return true;
+}
+
+const checkDataValidity = (guildData) => {
+    // check validity of base info
+    let result = hasKeys(guildData, ["name", "region", "defaultMessageNotifications", "explicitContentFilter", "verificationLevel",
+                                     "features", "roles", "channels", "emojis", "bans"]);
+    if (!result) {
+        console.log("Invalid file. Guild base data corrupt.");
+        return result;
+    }
+    let numRoles = guildData.roles.length;
+    let numChannels = guildData.channels.length;
+    let numEmojis = guildData.emojis.length;
+    let numBans = guildData.bans.length;
+
+    // check validity of role info
+    for (let role of guildData.roles) {
+        result = result && hasKeys(role, ["id", "name", "hexColor", "mentionable", "permissions", "hoist", "position"]);
+    }
+    if (!result) {
+        console.log("Invalid file. Role data corrupt.");
+        return result;
+    }
+
+    // check validity of channel info
+    for (let channel of guildData.channels) {
+        result = result && hasKeys(channel, ["id", "type", "name", "position", "isDefault"]);
+    }
+    if (!result) {
+        console.log("Invalid file. Channel data corrupt.");
+        return result;
+    }
+
+    // check validity of emoji info
+    for (let emoji of guildData.emojis) {
+        result = result && hasKeys(emoji, ["animated", "name", "url", "roles"]);
+    }
+    if (!result) {
+        console.log("Invalid file. Emoji data corrupt.");
+        return result;
+    }
+
+    // check validity of ban info
+    for (let ban of guildData.bans) {
+        result = result && hasKeys(ban, ["userID", "username", "discriminator", "isBot", "reason"]);
+    }
+    if (!result) {
+        console.log("Invalid file. Ban data corrupt.");
+        return result;
+    }
+    return result;
+}
+
+const import_emoji = "⬇";
+const keep_emoji = "⛔"
+
+// returns true if we want to import, false if we keep
+const awaitUserSelection = async (bot, message, title, import_text, keep_text, embed, sentMessage, additional_text = "") => {
+    let importing = false;
+    embed.fields = []
+    embed.addField(title, import_emoji + ": " + import_text + "\n" + keep_emoji + ": " + keep_text + additional_text);
+    await sentMessage.edit(embed);
+    const collectedReaction = await sentMessage.awaitReactions((reaction, user) =>
+                                                                (user.id === message.author.id) &&
+                                                                (reaction.emoji.name === import_emoji || reaction.emoji.name === keep_emoji),
+                                                            {max: 1, time: 300000});
+    let reaction = collectedReaction.first();
+    if (reaction.emoji.name === import_emoji) {
+        importing = true;
+    }
+    await reaction.remove(message.author.id);
+    return importing;
 }
 
 // TODO: check for what data we overwrite and change
-const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
+const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage) => {
     console.log("importing base server info")
     const reason = "Apto Server Layout Import";
     let guild = message.guild;
+    embed.setDescription(embed.description + "\n\n*Please react to this message to decide whether to import or not import the following:*")
+    await sentMessage.react(import_emoji);
+    await sentMessage.react(keep_emoji);
+
     if (!(guild.name === guildData.name)) {
-        console.log("\t- setting server name")
-        await guild.setName(guildData.name, reason);
+        let importing = await awaitUserSelection(bot, message, "Server Name:",
+                                                 "Import new name: ***" + guildData.name + "***",
+                                                 "Keep old name: ***" + guild.name + "***", embed, sentMessage);
+        if (importing) {
+            console.log("\t- setting server name")
+            await guild.setName(guildData.name, reason);
+        }
     }
     if (!(guild.region === guildData.region)) {
-        console.log("\t- setting server region")
-        await guild.setRegion(guildData.region, reason);
+        let importing = await awaitUserSelection(bot, message, "Server Region:",
+                                                 "Switch server region to: ***" + guildData.region + "***",
+                                                 "Stay in this server's region: ***" + guild.region + "***", embed, sentMessage,
+                                                 "\n\n*Concerning the voice channels.*");
+        if (importing) {
+            console.log("\t- setting server region")
+            await guild.setRegion(guildData.region, reason);
+        }
     }
     if (!(guild.defaultMessageNotifications === guildData.defaultMessageNotifications)) {
-        console.log("\t- setting server notifications")
-        await guild.setDefaultMessageNotifications(guildData.defaultMessageNotifications, reason);
+        let importing = await awaitUserSelection(bot, message, "Default Message Notifications:",
+                                                 "Import: ***" + guildData.defaultMessageNotifications + "***",
+                                                 "Keep: ***" + guild.defaultMessageNotifications + "***", embed, sentMessage,
+                                                 "\n\n*ALL = all messages will notify users\nMENTIONS = only @mentions will ping users*");
+        if (importing) {
+            console.log("\t- setting server notifications")
+            await guild.setDefaultMessageNotifications(guildData.defaultMessageNotifications, reason);
+        }
     }
     if (!(guild.explicitContentFilter == guildData.explicitContentFilter)) {
-        console.log("\t- setting server content filter")
-        await guild.setExplicitContentFilter(guildData.explicitContentFilter, reason);
+        let importing = await awaitUserSelection(bot, message, "Explicit Content Filter:",
+                                                 "Import: ***" + guildData.explicitContentFilter + "***",
+                                                 "Keep: ***" + guild.explicitContentFilter + "***", embed, sentMessage,
+                                                 "\n\n*Will scan all messages of a given user group and automatically delete those with explicit content;" +
+                                                 "\nDISABLED = don't scan any\nMEMBERS_WITHOUT_ROLES = only filter messages from members without roles\nALL = scan all messages*");
+        if (importing) {
+            console.log("\t- setting server content filter")
+            await guild.setExplicitContentFilter(guildData.explicitContentFilter, reason);
+        }
     }
     if (!(guild.verificationLevel == guildData.verificationLevel)) {
-        console.log("\t- setting server verification level")
-        await guild.setVerificationLevel(guildData.verificationLevel, reason);
-    }
-    if (!(guild.mfaLevel == guildData.mfaLevel)) {
-        console.log("\t- setting server MFA level")
-        guild.mfaLevel = guildData.mfaLevel;
+        let importing = await awaitUserSelection(bot, message, "Verification Level:",
+                                                 "Import: ***" + guildData.verificationLevel + "***",
+                                                 "Keep: ***" + guild.verificationLevel + "***", embed, sentMessage,
+                                                 "\n\n*Members must meet the following criteria before they can send messages to other server members " +
+                                                 "or in text channels. Does not apply if these members have an assigned role." +
+                                                 "\NONE = unrestricted\LOW = must have a verified email\MEDIUM = verified email and on Discord for longer than 5 minutes" +
+                                                 "\nHIGH = verified email and on this Server for longer than 10 minutes\nVERY HIGH = must have a verified phone*");
+        if (importing) {
+            console.log("\t- setting server verification level")
+            await guild.setVerificationLevel(guildData.verificationLevel, reason);
+        }
     }
 
     console.log("\t- setting server features")
@@ -315,17 +459,33 @@ const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
     }
     // the following two can time out, therefore we only try to do them if we must
     if (guildData.iconURL && (!(guildData.iconURL === guild.iconURL))) {
-        console.log("\t- setting server icon")
-        await guild.setIcon(guildData.iconURL, reason);
+        embed.setThumbnail(guildData.iconURL);
+        let importing = await awaitUserSelection(bot, message, "Server Icon:",
+                                                 "Import: ***" + guildData.iconURL + "***",
+                                                 "Keep current icon.", embed, sentMessage,
+                                                 "\n\n*Note: if you and me change the icon too often, we get a timer on it. If I get stuck here, that's why.*");
+        embed.setThumbnail(undefined);
+        await sentMessage.edit(embed);
+        if (importing) {
+            console.log("\t- setting server icon")
+            await guild.setIcon(guildData.iconURL, reason);
+        }
     }
     if (guildData.splashURL && (!(guildData.splashURL === guild.splashURL))) {
-        console.log("\t- setting server splash screen")
-        await guild.setSplash(guildData.splashURL, reason);
+        embed.setThumbnail(guildData.splashURL);
+        let importing = await awaitUserSelection(bot, message, "Server Splash Screen:",
+                                                 "Import: ***" + guildData.splashURL + "***",
+                                                 "Keep current splash screen.", embed, sentMessage,
+                                                 "\n\n*Note: Splash screens only show for Nitro boosted servers on Nitro level 1.\nThey are the background of your custom server invite link.*");
+        if (importing) {
+            console.log("\t- setting server splash screen")
+            await guild.setSplash(guildData.splashURL, reason);
+        }
     }
 }
 
 // TODO: role positioning if other roles already exist
-const importRoles = async (bot, message, guildRoleData, verbose=false) => {
+const importRoles = async (bot, message, guildRoleData) => {
     // guildRoleData is guildData.roles, an array of objects that describe roles
     const reason = "Apto Role Import";
     let updateMessage = await message.channel.send("Importing roles:");
@@ -386,7 +546,7 @@ const importRoles = async (bot, message, guildRoleData, verbose=false) => {
     return resultingRoles;
 }
 
-const importChannels = async (bot, message, guildChannelData, roleIDMap=undefined, verbose=false) => {
+const importChannels = async (bot, message, guildChannelData, roleIDMap=undefined) => {
     // guildChannelData is guildData.channels, an array of objects that describe channels
     // if roleIDMap is undefined we will not import channel permissions
     const reason = "Apto Channel Import";
@@ -463,7 +623,7 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
     return resultingChannels;
 }
 
-const importEmojis = async (bot, message, guildEmojiData, roleIDMap=undefined, verbose=false) => {
+const importEmojis = async (bot, message, guildEmojiData, roleIDMap=undefined) => {
     let reason = "Apto Emoji Import"
     for (let emojiData of guildEmojiData) {
         console.log("Adding emoji " + emojiData.name);
@@ -481,13 +641,14 @@ const importEmojis = async (bot, message, guildEmojiData, roleIDMap=undefined, v
     }
 }
 
-const importBans = async (bot, message, guildBanData, verbose=false) => {
+const importBans = async (bot, message, guildBanData) => {
     for (let banData of guildBanData) {
         console.log("Banning user " + banData.username + "#" + banData.discriminator);
         message.guild.ban(banData.userID, "Apto Ban Import; Reason = " + banData.reason);
     }
 }
 
+module.exports.initImport = initImport;
 module.exports.save = saveServerLayout;
 module.exports.load = loadServerLayout;
 module.exports.clearRoles = clearRoles;
