@@ -133,7 +133,7 @@ const saveServerLayout = async (bot, message, verbose=false) => {
         } else if (channel.type === "store") {
             channelObject.nsfw = channel.nsfw;
         } else if (channel.type === "voice") {
-            channelObject.bitrate = channel.bitrate;
+            channelObject.bitrate = channel.bitrate * 1000; // because we get it in kbps but the system wants it in bps
             channelObject.userLimit = channel.userLimit;
         } else if (channel.type === "category") {
             let children = channel.children;
@@ -246,15 +246,30 @@ const clearRoles = async (bot, message) => {
     }
 }
 
+const clearChannels = async (bot, message) => {
+    let channels = message.guild.channels;
+    for (let channel of channels) {
+        channel = channel[1];
+        if (!(channel.id === message.channel.id)) {
+            console.log("deleting channel " + channel.name);
+            await channel.delete().catch(e => {console.log("could not delete channel " + channel.name); console.log(e)});
+        }
+    }
+}
+
 const buildServer = async (bot, message, guildData, verbose=false) => {
     // TODO
     // TODO: add validity check of data
     //console.log("calling buildServer")
     //await importBaseServerInfo(bot, message, guildData, verbose);
+    console.log("clearing roles")
+    await clearRoles(bot, message);
+    console.log("clearning channels")
+    await clearChannels(bot, message);
     console.log("calling importRoles")
     let resultingRoles = await importRoles(bot, message, guildData.roles, verbose);
-    console.log("all roles imported")
-    //let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose)
+    console.log("calling importChannels")
+    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose)
 }
 
 // TODO: check for what data we overwrite and change
@@ -303,8 +318,6 @@ const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
         console.log("\t- setting server splash screen")
         await guild.setSplash(guildData.splashURL, reason);
     }
-
-    // TODO: guild embed can only be imported once the channels are imported
 }
 
 // TODO: role positioning if other roles already exist
@@ -377,7 +390,7 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
     let resultingChannels = {}; // a map from local channel IDs to the server's channel Snowflakes
     let channelsWithoutParent = []; // a list of all local channel's ids which have not yet assigned their parent
     for (let channel of guildChannelData) {
-
+        console.log("importing channel " + channel.name)
         let channelData = {
             type: channel.type,
             position: channel.position,
@@ -426,6 +439,13 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
         // TODO: does this work as intended?
         let discordChannel = await guild.createChannel(channel.name, channelData, reason);
         resultingChannels[channel.id] = discordChannel.id;
+
+        if (channel.isSystemChannel) {
+            await guild.setSystemChannel(discordChannel.id, reason);
+        }
+        if (channel.isEmbedChannel) {
+            await guild.setEmbed({enabled: true, channel:discordChannel.id}, reason)
+        }
     }
 
     if (channelsWithoutParent.length > 0) {
@@ -438,7 +458,6 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
     }
     return resultingChannels;
 }
-
 
 module.exports.save = saveServerLayout;
 module.exports.load = loadServerLayout;
