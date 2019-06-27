@@ -40,19 +40,18 @@ Let me assist in creating a safe and enjoyable space for you and your community!
 8. Temporary muting, bans and restrictions easily manageable for emergencies or fun viewer-only events! 
 9. --> more incoming when I get home and think on it :) Add your own if you have ideas! 
 
-Advertisement in 3rd person view: [draft 1]
+Advertisement in 3rd person view: 
 
-Hi! This is Apto. 
+Hi! This is Apto. / Hello! Let us introduce you to Apto.
 
-Apto is a Discord bot that will make Discord moderating and testing different features fun and easy! 
-Need help in making adjustments to the server in a way that makes it easy and safe for you to test it out at your own pace?
+Apto is a moderator bot that will make Discord moderating and testing different features fun and easy! 
+Experience a smooth and safe way to make adjustments to your server at your own pace. 
 Setting up, managing and testing will be made effortless with this companion on your server! 
-Apto will help in adjusting roles and permissions for user friendly experience
-as well as help you manage user-and server info more easily.
-This bot will also keep track of users and have full moderating function allowing temporary or
-permanent muting or ban feature depending on your needs. It can also act as your friendly neighborhood
-watchbot for suspicious activity - or, in turn, be your best friend in chat starting conversations and
-keeping users entertained. Let Apto assist in creating a safe and enjoyable space for you and your community! 
+Apto will assist in cloning server setups and helping you set everything up by using designated server templates to get your server look tailored to your specifications.
+Apto will help in adjusting roles and permissions for user friendly experience as well as help you manage user-and server info more easily. 
+It will also include a moderating function allowing temporary or permanent muting or banning depending on your needs. 
+
+Let Apto assist in creating a safe and enjoyable space for you and your community!
 
 Planned or implemented features: (in this order)
 - export and import:
