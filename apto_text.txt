@@ -41,6 +41,40 @@ Let me assist in creating a safe and enjoyable space for you and your community!
 9. Hi there! Let's get you set up, shall we?  
 10. --
 
+--------------------------------
+Zari's one-liners:
+
+1. Ahh, it's cozy here! Welcome to my channel, this is the place from where I'll operate.
+
+2. I am here to set up your server for you.
+
+3. I can help you with creating new roles and channels, and I can also load pre-made server templates for you.
+
+4. Here's a selection:
+
+5. Be careful when importing server templates. If you overwrite your server, you will lose all messages posted in your channels.
+
+6. I can back up your server layout, but be aware that I cannot back up the messages sent in your server's channels.
+
+7. You can check out all commands by typing "help".
+
+8. Please make sure to provide a link to a server file that I created, so that I can load it.
+You can right-click the server file that I sent you upon exporting, and then click "Copy Link" to quickly get access to the link.
+
+9. If you uploaded your own server.json file, you can right click it and select "Copy Link" to get the link to the file. Discord stores all uploaded files internally, it's quite useful.
+
+10. To try out server importing, it is best if you create a new server and invite me, so we can try it out together!
+
+11. Everybody, freeze!
+
+12. We need to take care of something real quick, so please be patient! :sweat_smile:
+
+13. We need a break, for now. I am sure this channel will thaw eventually!
+
+14. Psshhht, quiet now. :look_around:
+--------------------------------
+
+
 Advertisement in 3rd person view: 
 
 Hi! This is Apto. / Hello! Let us introduce you to Apto.
