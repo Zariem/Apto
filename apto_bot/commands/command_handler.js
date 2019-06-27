@@ -21,6 +21,10 @@ const executeCommand = async (bot, message) => {
             serverLayout.load(bot, message, content[1]);
         }
 
+        if (command === "clearRoles") {
+            serverLayout.clearRoles(bot, message);
+        }
+
         if (command === "save") {
             serverLayout.save(bot, message);
         }

@@ -230,7 +230,6 @@ const loadServerLayout = async (bot, message, url, verbose=false) => {
             console.log("xhr ------- log")
             console.log(result);
             let json = JSON.parse(result);
-            console.log(json);
             buildServer(bot, message, json, verbose);
         }
     };
@@ -238,29 +237,72 @@ const loadServerLayout = async (bot, message, url, verbose=false) => {
     xhr.send();
 }
 
+const clearRoles = async (bot, message) => {
+    let roles = message.guild.roles;
+    for (let role of roles) {
+        role = role[1];
+        console.log("deleting role " + role.name);
+        await role.delete().catch(e => {console.log("could not delete role " + role.name); console.log(e)});
+    }
+}
+
 const buildServer = async (bot, message, guildData, verbose=false) => {
     // TODO
     // TODO: add validity check of data
-    await importBaseServerInfo(bot, message, guildData, verbose);
+    //console.log("calling buildServer")
+    //await importBaseServerInfo(bot, message, guildData, verbose);
+    console.log("calling importRoles")
     let resultingRoles = await importRoles(bot, message, guildData.roles, verbose);
-    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose)
+    console.log("all roles imported")
+    //let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose)
 }
 
 // TODO: check for what data we overwrite and change
 const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
+    console.log("importing base server info")
     const reason = "Apto Server Layout Import";
     let guild = message.guild;
-    await guild.setName(guildData.name, reason);
-    await guild.setRegion(guildData.region, reason);
-    await guild.setDefaultMessageNotifications(guildData.defaultMessageNotifications, reason);
-    await guild.setExplicitContentFilter(guildData.explicitContentFilter, reason);
-    await guild.setVerificationLevel(guildData.verificationLevel, reason);
-    guild.mfaLevel = guildData.mfaLevel;
+    if (!(guild.name === guildData.name)) {
+        console.log("\t- setting server name")
+        await guild.setName(guildData.name, reason);
+    }
+    if (!(guild.region === guildData.region)) {
+        console.log("\t- setting server region")
+        await guild.setRegion(guildData.region, reason);
+    }
+    if (!(guild.defaultMessageNotifications === guildData.defaultMessageNotifications)) {
+        console.log("\t- setting server notifications")
+        await guild.setDefaultMessageNotifications(guildData.defaultMessageNotifications, reason);
+    }
+    if (!(guild.explicitContentFilter == guildData.explicitContentFilter)) {
+        console.log("\t- setting server content filter")
+        await guild.setExplicitContentFilter(guildData.explicitContentFilter, reason);
+    }
+    if (!(guild.verificationLevel == guildData.verificationLevel)) {
+        console.log("\t- setting server verification level")
+        await guild.setVerificationLevel(guildData.verificationLevel, reason);
+    }
+    if (!(guild.mfaLevel == guildData.mfaLevel)) {
+        console.log("\t- setting server MFA level")
+        guild.mfaLevel = guildData.mfaLevel;
+    }
+
+    console.log("\t- setting server features")
     guild.features = guildData.features;
 
-    if (guildData.iconURL) await guild.setIcon(guildData.iconURL, reason);
-    if (guildData.afkTimeout) await guild.setAFKTimeout(guildData.afkTimeout, reason);
-    if (guildData.splashURL) await guild.setSplash(guildData.splashURL, reason);
+    if (guildData.afkTimeout) {
+        console.log("\t- setting server afk timeout")
+        await guild.setAFKTimeout(guildData.afkTimeout, reason);
+    }
+    // the following two can time out, therefore we only try to do them if we must
+    if (guildData.iconURL && (!(guildData.iconURL === guild.iconURL))) {
+        console.log("\t- setting server icon")
+        await guild.setIcon(guildData.iconURL, reason);
+    }
+    if (guildData.splashURL && (!(guildData.splashURL === guild.splashURL))) {
+        console.log("\t- setting server splash screen")
+        await guild.setSplash(guildData.splashURL, reason);
+    }
 
     // TODO: guild embed can only be imported once the channels are imported
 }
@@ -269,34 +311,60 @@ const importBaseServerInfo = async (bot, message, guildData, verbose=false) => {
 const importRoles = async (bot, message, guildRoleData, verbose=false) => {
     // guildRoleData is guildData.roles, an array of objects that describe roles
     const reason = "Apto Role Import";
+    let updateMessage = await message.channel.send("Importing roles:");
     let guild = message.guild;
     let resultingRoles = {}; // map internal role ID to the role IDs of created roles
     for (let role of guildRoleData) {
-        if (role.editable) {
-            let roleData = {name: role.name,
-                            color: role.hexColor,
-                            hoist: role.hoist,
-                            position: role.position,
-                            permissions: role.permissions,
-                            mentionable: role.mentionable};
-            if (role.id == -1) {
-                // merge Apto's role with the integrated role
-                let aptoGuildMember = await guild.members.get(bot.user.id);
-                let aptoIntegratedRole = await aptoGuildMember.roles.find(r => r.managed);
-                aptoIntegratedRole.edit(roleData, reason);
-                resultingRoles[role.id] = bot.user.id;
-            } else if (role.isDefault) {
-                // merge the @everyone role with this server's @everyone role
-                let everyoneRole = guild.defaultRole;
-                everyoneRole.setPermissions(role.permissions);
-                resultingRoles[role.id] = everyoneRole.id;
+        updateMessage = await updateMessage.edit(updateMessage.content + "\nTrying to add role: " + role.name + "... ");
+        if (role.id == -1) {
+            // don't import Apto's role data -> we don't have permissions to set them
+            let aptoGuildMember = await guild.members.get(bot.user.id);
+            let aptoIntegratedRole = await aptoGuildMember.roles.find(r => r.managed);
+            resultingRoles[role.id] = aptoIntegratedRole.id;
+        } else if (role.isDefault) {
+            // merge the @everyone role with this server's @everyone role
+            let everyoneRole = guild.defaultRole;
+            if (everyoneRole.editable) {
+                await everyoneRole.setPermissions(role.permissions);
             } else {
-                let discordRole = await guild.createRole(roleData, reason);
-                resultingRoles[role.id] = discordRole.id;
+                await message.channel.send("Could not edit the 'everyone' role due to missing permissions.");
             }
+            resultingRoles[role.id] = everyoneRole.id;
         } else {
-            message.channel.send("Could not edit role " + role.name + " due to missing permissions.");
+            console.log("creating role " + role.name)
+            //let discordRole = await guild.createRole(roleData, reason);
+            let discordRole = await guild.createRole({
+                                                      name: role.name,
+                                                      color: role.hexColor,
+                                                      hoist: role.hoist,
+                                                      mentionable: role.mentionable
+                                                     }, reason)
+                                                     .catch(e => {
+                                                         console.log("error on creating role!");
+                                                         console.log(e);
+                                                         message.channel.send("Could not create role *" + role.name + "*, please make sure I have the manage roles permission to do so and that the server did not reach the limit of 250 roles.");
+                                                     });
+            if (discordRole) {
+                console.log("\tcreation successful!")
+                resultingRoles[role.id] = discordRole.id;
+                console.log("\t- setting role permissions")
+                await discordRole.setPermissions(role.permissions)
+                    .catch(e => {
+                        console.log("error on setting permissions!");
+                        console.log(e);
+                        message.channel.send("Could not set __permissions__ of role *" + role.name + "*, please check these permissions yourself.");
+                    });
+                console.log("\t- setting role position to " + role.position)
+                await discordRole.setPosition(role.position)
+                    .catch(e => {
+                        console.log("error on setting position!");
+                        console.log(e);
+                        message.channel.send("Could not set the __position__ of role *" + role.name + "*, please go to Server Settings -> Roles to ensure that the roles are in the correct order.");
+                    });
+                console.log("\t--- DONE")
+            }
         }
+        updateMessage = await updateMessage.edit(updateMessage.content + " Done!");
     }
     return resultingRoles;
 }
@@ -374,3 +442,4 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
 
 module.exports.save = saveServerLayout;
 module.exports.load = loadServerLayout;
+module.exports.clearRoles = clearRoles;
