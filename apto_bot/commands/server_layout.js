@@ -270,6 +270,8 @@ const buildServer = async (bot, message, guildData, verbose=false) => {
     let resultingRoles = await importRoles(bot, message, guildData.roles, verbose);
     console.log("calling importChannels")
     let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose)
+    console.log("calling importEmojis")
+    await importEmojis(bot, message, guildData.emojis, resultingRoles, verbose)
 }
 
 // TODO: check for what data we overwrite and change
@@ -457,6 +459,24 @@ const importChannels = async (bot, message, guildChannelData, roleIDMap=undefine
         }
     }
     return resultingChannels;
+}
+
+const importEmojis = async (bot, message, guildEmojiData, roleIDMap=undefined, verbose=false) => {
+    let reason = "Apto Emoji Import"
+    for (let emojiData of guildEmojiData) {
+        console.log("Adding emoji " + emojiData.name);
+        let rolesThatCanUseIt = [];
+        if (roleIDMap) {
+            for (let localRoleID of emojiData.roles) {
+                let guildRoleID = roleIDMap[localRoleID];
+                let role = message.guild.roles.get(guildRoleID);
+                if (role) {
+                    rolesThatCanUseIt.push(role);
+                }
+            }
+        }
+        await message.guild.createEmoji(emojiData.url, emojiData.name, rolesThatCanUseIt, reason);
+    }
 }
 
 module.exports.save = saveServerLayout;
