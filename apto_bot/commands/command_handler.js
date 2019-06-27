@@ -17,7 +17,7 @@ const executeCommand = async (bot, message) => {
             message.channel.send("Pong!");
         }
 
-        if (command === "test") {
+        if (command === "importServer") {
             serverLayout.load(bot, message, content[1]);
         }
 

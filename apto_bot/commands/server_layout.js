@@ -269,9 +269,11 @@ const buildServer = async (bot, message, guildData, verbose=false) => {
     console.log("calling importRoles")
     let resultingRoles = await importRoles(bot, message, guildData.roles, verbose);
     console.log("calling importChannels")
-    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose)
+    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles, verbose);
     console.log("calling importEmojis")
-    await importEmojis(bot, message, guildData.emojis, resultingRoles, verbose)
+    await importEmojis(bot, message, guildData.emojis, resultingRoles, verbose);
+    console.log("importing bans")
+    await importBans(bot, message, guildData.bans, verbose);
 }
 
 // TODO: check for what data we overwrite and change
@@ -476,6 +478,13 @@ const importEmojis = async (bot, message, guildEmojiData, roleIDMap=undefined, v
             }
         }
         await message.guild.createEmoji(emojiData.url, emojiData.name, rolesThatCanUseIt, reason);
+    }
+}
+
+const importBans = async (bot, message, guildBanData, verbose=false) => {
+    for (let banData of guildBanData) {
+        console.log("Banning user " + banData.username + "#" + banData.discriminator);
+        message.guild.ban(banData.userID, "Apto Ban Import; Reason = " + banData.reason);
     }
 }
 
