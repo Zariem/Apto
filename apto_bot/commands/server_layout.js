@@ -231,8 +231,8 @@ const loadServerLayout = async (bot, message, url, embed, sentMessage) => {
     if (!url || !(url.substr(url.length - 5) === ".json")) {
         embed.setDescription(embed.description + "\n\n⚠️No .json file found to open!⚠️\n" +
                              "*Please ensure that you provide a link to a valid server.json file that I created upon exporting a server.*\n\n" +
-                             "Usage: `" + config.prefix + "import https://url-to.your/server.json`\n*(This link is just an example)*")
-             .addField("⁉️ Tip:", "You can right-click the server file that I sent you upon exporting, and then click `Copy Link` to quickly get access to the link.\n" +
+                             "Usage: `" + config.prefix + "importServer https://url-to.your/server.json`\n*(This link is just an example)*")
+             .addField("💡Tip:💡", "You can right-click the server file that I sent you upon exporting, and then click `Copy Link` to quickly get access to the link. " +
                                  "If you uploaded your own server.json file, you can also right click it and select `Copy Link` to get the link to the file.\n" +
                                  "Discord stores all uploaded files internally, it's quite useful.")
         await sentMessage.edit(embed);
@@ -323,6 +323,17 @@ const rolesToText = (roleNames, max) => {
     return rolesText;
 }
 
+const waitToContinue = async (bot, message, embed, sentMessage) => {
+    await sentMessage.clearReactions();
+    embed.addField("To continue, press:", "✅");
+    await sentMessage.edit(embed);
+    await sentMessage.react("✅");
+    await sentMessage.awaitReactions((reaction, user) => (user.id === message.author.id) && (reaction.emoji.name === "✅"), {max: 1, time: 300000});
+    await sentMessage.clearReactions();
+    embed.fields = [];
+    await sentMessage.edit(embed);
+}
+
 const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     console.log(guildData);
     embed.setDescription(embed.description + "\nSuccess!\n\nChecking if the file is valid...");
@@ -334,14 +345,15 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
         return;
     }
     embed.setDescription(embed.description + "\n\n👍 All in order!");
-    await sentMessage.edit(embed);
-    await setTimeout(() => {}, 3000); // wait for 3s
+
+    await waitToContinue(bot, message, embed, sentMessage);
+
     embed.setDescription("Importing the main server data!");
     await sentMessage.edit(embed);
     console.log("calling buildServer")
     await importBaseServerInfo(bot, message, guildData, embed, sentMessage);
 
-    await sentMessage.clearReactions();
+    await waitToContinue(bot, message, embed, sentMessage);
 
     embed.setDescription("Importing roles!");
     embed.fields = [];
@@ -371,6 +383,8 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     }
     console.log("calling importRoles")
     let resultingRoles = await importRoles(bot, message, guildData.roles, embed, sentMessage, selectForEachRole);
+
+    await waitToContinue(bot, message, embed, sentMessage);
 
     /*console.log("clearing roles")
     await clearRoles(bot, message);
