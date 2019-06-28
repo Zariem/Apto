@@ -1,6 +1,7 @@
 
 const config = require('../config.json');
-const serverLayout = require('./server_layout.js')
+const serverLayout = require('./server_layout.js');
+const cloner = require('./clone.js');
 
 const executeCommand = async (bot, message) => {
 
@@ -27,6 +28,11 @@ const executeCommand = async (bot, message) => {
 
         if (command === "save") {
             serverLayout.save(bot, message);
+        }
+
+        if (command === "clone") {
+            let query = content.slice(1).join(" ");
+            cloner.clone(bot, message, query);
         }
     }
 
