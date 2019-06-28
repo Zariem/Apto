@@ -25,7 +25,7 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
 <br>
 
 * Import/export of server settings:
-  * Import/Export layout
+  * Import/Export server layout
   * In-server role cloning
   * In-server channel cloning
 
@@ -38,11 +38,11 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
 - [ ] Admin role listing 
 - [ ] Booster role listing
 - [ ] Temporary muting/banning
-- [ ] Bot-side pinging function
-- [ ] Temporary channel changing
-- [ ] Password-protected channels
-- [ ] Role descriptions
-- [ ] Spoiler disable
+- [ ] Bot-side role pinging function
+- [ ] Text- Image- Gif-only channels
+- [ ] (Password-protected channels)
+- [ ] (Role descriptions)
+- [ ] (Spoiler disable)
 
 <h4 align="center">💬 COMMANDS 💬</h4>
 <br>
