@@ -13,6 +13,29 @@ const clone = async (bot, message, roleOrChannel) => {
     }
 }
 
+const clone_channel = async (bot, message, channel) => {
+    let channelData = {
+        type: channel.type,
+        position: channel.position + 1,
+        parent: channel.parent,
+        topic: channel.topic,
+        nsfw: channel.nsfw,
+        bitrate: channel.bitrate,
+        userLimit: channel.userLimit,
+        rateLimitPerUser: channel.rateLimitPerUser
+    };
+    let clone = await message.guild.createChannel(channel.name + "(new)", channelData).catch(e => {
+        message.channel.send("Error on cloning channel " + channel.name + ".");
+    });
+
+    if (clone) {
+        await clone.replacePermissionOverwrites(channel.permissionOverwrites).catch(e => {
+            message.channel.send("Error on setting permissions for channel " + channel.name + ".");
+        });
+    }
+    message.channel.send("Done cloning channel " + channel.name + ".");
+}
+
 const clone_role = async (bot, message, role) => {
     let roleData = {
         name: role.name + "(new)",
