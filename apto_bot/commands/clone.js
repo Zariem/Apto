@@ -20,22 +20,16 @@ const clone = async (bot, message, roleOrChannel) => {
     }
     // wasn't a channel ID either
     result = message.guild.roles.find(role => role.name.toLowerCase() === roleOrChannel.toLowerCase());
-    console.log("Looking for a role of name " + roleOrChannel.toLowerCase() + ", found:")
-    console.log(result)
     if (result) {
         return await clone_role(bot, message, result);
     } else {
         // testing for category channels or channels without spaces
         result = message.guild.channels.find(channel => channel.name.toLowerCase() === roleOrChannel.toLowerCase());
-        console.log("Looking for a channel of name " + roleOrChannel.toLowerCase() + ", found:")
-        console.log(result)
         if (result) {
             return await clone_channel(bot, message, result);
         } else {
             roleOrChannel = roleOrChannel.toLowerCase().replace(/\s+/g, '-'); // replace whitespace with dashes
             result = message.guild.channels.find(channel => channel.name.toLowerCase() === roleOrChannel);
-            console.log("Looking for a channel of name " + roleOrChannel + ", found:")
-            console.log(result)
             if (result) {
                 return await clone_channel(bot, message, result);
             } else {
