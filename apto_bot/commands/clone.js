@@ -2,11 +2,11 @@ const config = require('../config.json');
 const getRoleOrChannel = require('../util/get_role_or_channel.js')
 
 const clone = async (bot, message, roleOrChannel) => {
-    let result = getRoleOrChannel(roleOrChannel);
+    let result = getRoleOrChannel(message.guild, roleOrChannel);
     if (result.type === 'role') {
-        return await clone_role(bot, message, result);
+        return await clone_role(bot, message, result.value);
     } else if (result.type === 'channel') {
-        return await clone_channel(bot, message, result);
+        return await clone_channel(bot, message, result.value);
     } else {
         message.channel.send("Sorry. I could not find the role or channel you were specifying.\n" +
                              "Usage: `" + config.prefix + "clone (role mention|role name|role id|channel hashtag|channel name|channel id)`")
@@ -24,7 +24,7 @@ const clone_channel = async (bot, message, channel) => {
         userLimit: channel.userLimit,
         rateLimitPerUser: channel.rateLimitPerUser
     };
-    let clone = await message.guild.createChannel(channel.name + "(new)", channelData).catch(e => {
+    let clone = await message.guild.createChannel(channel.name + " new", channelData).catch(e => {
         message.channel.send("Error on cloning channel " + channel.name + ".");
     });
 
