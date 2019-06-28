@@ -57,7 +57,7 @@ const clone_channel = async (bot, message, channel) => {
         userLimit: channel.userLimit,
         rateLimitPerUser: channel.rateLimitPerUser
     };
-    let clone = await message.guild.createChannel(channel.name, channelData).catch(e => {
+    let clone = await message.guild.createChannel(channel.name + "(new)", channelData).catch(e => {
         message.channel.send("Error on cloning channel " + channel.name + ".");
     });
 
@@ -71,7 +71,7 @@ const clone_channel = async (bot, message, channel) => {
 
 const clone_role = async (bot, message, role) => {
     let roleData = {
-        name: role.name,
+        name: role.name + "(new)",
         color: role.hexColor,
         hoist: role.hoist,
         mentionable: role.mentionable
