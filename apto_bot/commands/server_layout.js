@@ -323,6 +323,63 @@ const rolesToText = (roleNames, max) => {
     return rolesText;
 }
 
+const comparison = (a, b) => {
+    if (a.position > b.position) return 1;
+    else if (a.position < b.position) return -1;
+    else return 0;
+}
+
+const getChannelListOfImport = (guildData) => {
+    let channels = guildData.channels;
+    let channelCategories = [{id:-1, name:"(Channels Outside Categories)", children:[]}];
+    let numChannels = channels.length;
+
+    for (let i = 0; i < numChannels; i++) {
+        let channel = channels[i];
+        if (channel.type === "category") {
+            channelCategories.push({id:channel.id, name:channel.name, arrayIndex:i, position:channel.position, children:[]});
+        }
+    }
+
+    for (let i = 0; i < numChannels; i++) {
+        let channel = channels[i];
+        if (!(channel.type === "category")) {
+            for (let category of channelCategories) {
+                if (category.id == channel.parentID) category.children.push({name:channel.name, position:channel.position, arrayIndex:i, isDefault:channel.isSystemChannel});
+            }
+        }
+    }
+
+    for (let category of channelCategories) {
+        category.children.sort(comparison);
+    }
+    channelCategories.sort(comparison);
+    return channelCategories;
+}
+
+const getChannelCategoryChildrenText = (categoryChildren) => {
+    let text = "";
+    for (let channel of categoryChildren) {
+        if (channel.isDefault) text += "__#" + channel.name + "__\n";
+        else text += "#" + channel.name + "\n";
+    }
+    return text;
+}
+
+const channelListToEmbedText = async (channelList, embed, sentMessage) => {
+    embed.fields = [];
+    for (let category of channelList) {
+        let text = getChannelCategoryChildrenText(category.children);
+        if (category.id == -1) {
+            embed.setDescription(embed.description + "\n\n" + text);
+        } else {
+            embed.addField(category.name, text, false);
+        }
+    }
+    embed.setFooter("The underlined channel is the default/system channel where welcome messages get posted.")
+    await sentMessage.edit(embed);
+}
+
 const waitToContinue = async (bot, message, embed, sentMessage) => {
     await sentMessage.clearReactions();
     embed.addField("To continue, press:", "✅");
@@ -335,7 +392,7 @@ const waitToContinue = async (bot, message, embed, sentMessage) => {
 }
 
 const buildServer = async (bot, message, guildData, embed, sentMessage) => {
-    console.log(guildData);
+    /*console.log(guildData);
     embed.setDescription(embed.description + "\nSuccess!\n\nChecking if the file is valid...");
     await sentMessage.edit(embed);
     let isValid = checkDataValidity(guildData);
@@ -354,7 +411,7 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     await importBaseServerInfo(bot, message, guildData, embed, sentMessage);
 
     await waitToContinue(bot, message, embed, sentMessage);
-
+    */
     embed.setDescription("Importing roles!");
     embed.fields = [];
     let existingRoles = getRoleListOfThisServer(bot, message);
@@ -373,7 +430,6 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
                                                      "Specify: For each role, select whether to edit another role or just add it.",
                                                      "Overwrite: Delete all current roles and import the new ones.", embed, sentMessage, "", false);
 
-    console.log("Found import Type: " + importType)
     let selectForEachRole = false;
     if (importType === 'select') {
         selectForEachRole = true;
@@ -386,14 +442,32 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
 
     await waitToContinue(bot, message, embed, sentMessage);
 
-    /*console.log("clearing roles")
-    await clearRoles(bot, message);
-    console.log("clearning channels")
-    await clearChannels(bot, message);
-    console.log("calling importRoles")
-    let resultingRoles = await importRoles(bot, message, guildData.roles);
+    // TODO: add handling if server templates are too large to fit a single embed!
+    embed.setDescription("Importing channels!");
+
+    await sentMessage.react(additive_import_emoji);
+    await sentMessage.react(selective_import_emoji);
+    await sentMessage.react(overwriting_import_emoji);
+
+    let channelList = getChannelListOfImport(guildData);
+    await channelListToEmbedText(channelList, embed, sentMessage);
+    importType = await awaitImportTypeSelection(bot, message, "Choose an Import Mode",
+                                                    "Additive: Keep existing channels and add the new ones.",
+                                                    "Specify: For each channel, select whether to edit another channel or just add it.",
+                                                    "Overwrite: Delete all current channels (except for the one we are in) and import the new ones.",
+                                                    embed, sentMessage, "- Be aware that deleting the channels will result in loss of their contents.\n" +
+                                                    "- If you did not import all roles, channels might not work out the way they were intended to.", false)
+    let selectForEachChannel = false;
+    if (importType === 'select') {
+        selectForEachChannel = true;
+    } else if (importType === 'overwrite') {
+        console.log("clearing channels")
+        await clearChannels(bot, message);
+    }
     console.log("calling importChannels")
-    let resultingChannels = await importChannels(bot, message, guildData.channels, resultingRoles);
+    let resultingChannels = await importChannels(bot, message, guildData.channels, channelList, resultingRoles, embed, sentMessage, selectForEachChannel);
+
+    /*
     console.log("calling importEmojis")
     await importEmojis(bot, message, guildData.emojis, resultingRoles);
     console.log("importing bans")
@@ -512,7 +586,7 @@ const awaitImportTypeSelection = async (bot, message, title, additive_text, spec
     return import_type;
 }
 
-const awaitRoleOrChannelSelection = async (bot, message, isRoleSelection=true, retrying=false) => {
+const awaitRoleOrChannelSelection = async (bot, message, isRoleSelection=true, retrying=false, isCategoryChannel=false, isVoiceChannel=false, selectingParent=false) => {
     let embed2 = new Discord.RichEmbed()
     if (isRoleSelection) {
         // TODO: add pages if more than 40 roles
@@ -523,10 +597,16 @@ const awaitRoleOrChannelSelection = async (bot, message, isRoleSelection=true, r
         }
         embed2.addField("Please select a role which to overwrite by typing its name, linking the role, or posting the role's ID:", existingRolesText)
     } else {
-        if (retrying) embed2.setDescription("⚠️ Could not find the specified role, please retry! ⚠️");
-        embed2.addField("Please select a channel which to overwrite by typing its name, linking the channel, or posting the channel's ID:", "*(look at your channels for a selection)*")
+        let label = (isCategoryChannel) ? "category" : "channel";
+        label = (isVoiceChannel) ? "voice channel" : label;
+        if (retrying) embed2.setDescription("⚠️ Could not find the specified " + label + ", please retry! ⚠️");
+        let addOn = (selectingParent) ? "" : " which to overwrite";
+        let embedText = "Please select a " + label + addOn + " by typing its name, linking the " + label + ", or posting the " + label + "'s ID:"
+        embed2.addField(embedText, "*(look at your channels for a selection)*")
     }
-    embed2.setFooter("Type 'exit' or 'cancel' to quit this menu and simply add the role. (Additive Import).")
+    let footerText = "Type 'exit' or 'cancel' to quit this menu and ";
+    footerText += (selectingParent) ? "leave the channels unassigned to any section." : "simply add it. (Additive Import).";
+    embed2.setFooter(footerText);
     let sentMessage2 = await message.channel.send(embed2);
     let reply = await message.channel.awaitMessages((response) => (response.author.id === message.author.id), {max: 1, time: 300000});
     reply = reply.first();
@@ -557,7 +637,18 @@ const awaitRoleOrChannelSelection = async (bot, message, isRoleSelection=true, r
             console.log("Looking for a role of name " + repliedMessage + ", found:")
             console.log(result)
         } else {
+            if (!isCategoryChannel) repliedMessage = repliedMessage.replace(/\s+/g, '-'); // replace whitespace with dashes
             result = message.guild.channels.find(channel => channel.name.toLowerCase() === repliedMessage);
+            console.log("Looking for a channel of name " + repliedMessage + ", found:")
+            console.log(result)
+            if (result) {
+                if (!(isCategoryChannel == (result.type === 'category'))) { // types don't match!
+                    result = undefined; // retry
+                }
+                if (!(isVoiceChannel == (result.type === 'voice'))) {
+                    result = undefined; // retry
+                }
+            }
         }
     }
     await sentMessage2.delete();
@@ -752,7 +843,7 @@ const importRoles = async (bot, message, guildRoleData, embed, sentMessage, sele
                         .catch(e => {
                             console.log("error on setting position!");
                             console.log(e);
-                            actionDone = "\n⚠️Created role *" + role.name + "*but could not set role position. Please go to Server Settings -> Roles to ensure that the roles are in the correct order.";
+                            actionDone = "\n⚠️Created role *" + role.name + "* but could not set role position. Please go to Server Settings -> Roles to ensure that the roles are in the correct order.";
                         });
                     console.log("\t--- DONE")
                 }
@@ -771,71 +862,231 @@ const importRoles = async (bot, message, guildRoleData, embed, sentMessage, sele
     return resultingRoles;
 }
 
-const importChannels = async (bot, message, guildChannelData, roleIDMap=undefined) => {
+const buildChannelData = (bot, message, channelInfo, roleIDMap, resultingChannels, channelsWithoutParent) => {
+    let channelData = {
+        type: channelInfo.type,
+        position: channelInfo.position,
+    }
+    if (!(channelInfo.topic == undefined)) channelData.topic = channelInfo.topic;
+    if (!(channelInfo.nsfw == undefined)) channelData.nsfw = channelInfo.nsfw;
+    if (!(channelInfo.bitrate == undefined)) channelData.bitrate = channelInfo.bitrate;
+    if (!(channelInfo.userLimit == undefined)) channelData.userLimit = channelInfo.userLimit;
+    if (!(channelInfo.rateLimitPerUser == undefined)) channelData.rateLimitPerUser = channelInfo.rateLimitPerUser;
+    if (!(channelInfo.parentID == undefined)) {
+        if (resultingChannels[channelInfo.parentID]) {
+            // parent channel has already been created (should normally be the case)
+            channelData.parent = resultingChannels[channelInfo.parentID];
+        } else {
+            channelsWithoutParent.push(channelInfo.id);
+        }
+    }
+    // add permission overwrites
+    // if roleIDMap is not specified, don't add role permissions
+    // in any case, add user permissions (TODO: check if it works even if these users are not (yet) on that server)
+    let permissions = [];
+    for (let overwrite of channelInfo.permissionOverwrites) {
+        let key = undefined;
+        if (overwrite.type === 'member') {
+            key = overwrite.id;
+            let member = message.guild.members.get(key);
+            if (!member) {
+                message.channel.send("Could not add permission overwrites for a user in channel " +
+                                     channelInfo.name + " because this user is not in this server.");
+                key = undefined;
+            }
+        } else if (roleIDMap) {
+            key = roleIDMap[overwrite.id];
+        }
+        if (key) {
+            let overwriteValues = {
+                id: key,
+                allow: overwrite.allow,
+                deny: overwrite.deny
+            };
+            permissions.push(overwriteValues);
+        }
+    }
+    channelData.permissionOverwrites = permissions;
+    return channelData;
+}
+
+const importChannels = async (bot, message, guildChannelData, channelList, roleIDMap, embed, sentMessage, selectImportType=false) => {
     // guildChannelData is guildData.channels, an array of objects that describe channels
+    // channelList lists all channels in the right order
     // if roleIDMap is undefined we will not import channel permissions
     const reason = "Apto Channel Import";
     let guild = message.guild;
     let resultingChannels = {}; // a map from local channel IDs to the server's channel Snowflakes
     let channelsWithoutParent = []; // a list of all local channel's ids which have not yet assigned their parent
-    for (let channel of guildChannelData) {
-        console.log("importing channel " + channel.name)
-        let channelData = {
-            type: channel.type,
-            position: channel.position,
-        }
-        if (!(channel.topic == undefined)) channelData.topic = channel.topic;
-        if (!(channel.nsfw == undefined)) channelData.nsfw = channel.nsfw;
-        if (!(channel.bitrate == undefined)) channelData.bitrate = channel.bitrate;
-        if (!(channel.userLimit == undefined)) channelData.userLimit = channel.userLimit;
-        if (!(channel.rateLimitPerUser == undefined)) channelData.rateLimitPerUser = channel.rateLimitPerUser;
-        if (!(channel.parentID == undefined)) {
-            if (resultingChannels[channel.parentID]) {
-                // parent channel has already been created (should normally be the case)
-                channelData.parent = resultingChannels[channel.parentID];
-            } else {
-                channelsWithoutParent.push(channel.id);
+
+    for (let section of channelList) {
+        if (section.id != -1) { // skip section-less channels for now
+
+            let categoryChannel = guildChannelData[section.arrayIndex];
+            let importType = 'add'
+            if (selectImportType) {
+                let topicText = (categoryChannel.topic == undefined) ? "" : categoryChannel.topic;
+                //let typeName = (categoryChannel)
+                embed.fields = [];
+                embed.addField(categoryChannel.name, getChannelCategoryChildrenText(categoryChannel.children), false);
+                importType = await awaitImportTypeSelection(bot, message, "Choose how to add category:\n\t**" + categoryChannel.name + "**\n** **",
+                                                                    "Additive: Simply add it.",
+                                                                    "Merge: Choose an existing category to merge this one with.",
+                                                                    "Ignore: Do not add this category. *(If you keep the channels, their permissions might not get imported properly!)*",
+                                                                    embed, sentMessage, topicText + "\n\n*Note: you can decide over this category's channels next.*", false);
             }
-        }
-        // add permission overwrites
-        // if roleIDMap is not specified, don't add role permissions
-        // in any case, add user permissions (TODO: check if it works even if these users are not (yet) on that server)
-        let permissions = [];
-        for (let overwrite of channel.permissionOverwrites) {
-            let key = undefined;
-            if (overwrite.type === 'member') {
-                key = overwrite.id;
-                let member = guild.members.get(key);
-                if (!member) {
-                    message.channel.send("Could not add permission overwrites for a user in channel " +
-                                         channel.name + " because this user is not in this server.");
-                    key = undefined;
+            if (!(importType === 'overwrite')) { // actually, bad naming, this 'overwrite' option is actually the 'ignore' option, but I'm too tired to fix that right now
+                let channelData = buildChannelData(bot, message, categoryChannel, roleIDMap, resultingChannels, channelsWithoutParent);
+                if (importType === 'select') { // select a category channel and merge this one with it
+                    let selectedChannel = await awaitRoleOrChannelSelection(bot, message, false, false, true, false);
+                    if (selectedChannel) {
+                        await selectedChannel.edit(channelData, reason);
+                        resultingChannels[categoryChannel.id] = selectedChannel.id;
+                    } else {
+                        importType = 'add';
+                    }
                 }
-            } else if (roleIDMap) {
-                key = roleIDMap[overwrite.id];
-            }
-            if (key) {
-                let overwriteValues = {
-                    id: key,
-                    allow: overwrite.allow,
-                    deny: overwrite.deny
-                };
-                permissions.push(overwriteValues);
-            }
-        }
-        channelData.permissionOverwrites = permissions;
+                if (importType === 'add') {
+                    let discordChannel = await guild.createChannel(categoryChannel.name, channelData, reason);
+                    resultingChannels[categoryChannel.id] = discordChannel.id;
 
-        // TODO: does this work as intended?
-        let discordChannel = await guild.createChannel(channel.name, channelData, reason);
-        resultingChannels[channel.id] = discordChannel.id;
+                    // TODO: enable setting this separately as well
+                    if (categoryChannel.isEmbedChannel) {
+                        await guild.setEmbed({enabled: true, channel:discordChannel.id}, reason)
+                    }
+                }
+            }
 
-        if (channel.isSystemChannel) {
-            await guild.setSystemChannel(discordChannel.id, reason);
+            // ask what to do with the channel's children
+            let additiveText = (importType === 'overwrite') ? "Additive: Specify a new category to add all channels to. *(Might not import permissions properly)*" :
+                                                              (importType === 'select') ? "Additive: Add all channels to the merged category." : "Additive: Add all channels to the imported section.";
+            let selectiveText = "Selective: Select where to place each channel of this category separately. *(Allows for channel merging, which allows keeping " +
+                                "channel content while changing permissions, but also might not import permissions properly if you choose a channel in a different category)*";
+            let overwriteText = "Ignore: Discard all channels in this section.";
+
+            let childrenImportType = 'add';
+            embed.fields = [];
+            embed.addField(categoryChannel.name, getChannelCategoryChildrenText(categoryChannel.children), false);
+            childrenImportType = await awaitImportTypeSelection(bot, message, "Choose how to add the channels in category:\n\t**" + categoryChannel.name + "**\n** **",
+                                                                additiveText, selectiveText, overwriteText, embed, sentMessage, "", false);
+
+            if (childrenImportType === 'add') {
+                let categoryChannelID = undefined;
+                if (!(importType === 'overwrite')) {
+                    categoryChannelID = resultingChannels[categoryChannel.id]; // take the category channel which we just created or merged
+                } else {
+                    // specify a new category channel to add all to
+                    let selectedChannel = await awaitRoleOrChannelSelection(bot, message, false, false, true, false, true);
+                    if (selectedChannel) categoryChannelID = selectedChannel.id;
+                }
+                // add all channels!
+                for (let channelInfo of section.children) { // add all of them to the category channel
+                    let channel = guildChannelData[channelInfo.arrayIndex];
+                    let channelData = buildChannelData(bot, message, channel, roleIDMap, resultingChannels, channelsWithoutParent);
+                    let discordChannel = await guild.createChannel(channel.name, channelData, reason);
+                    if (categoryChannelID) discordChannel.setParent(categoryChannelID); // if parent not specified
+                    resultingChannels[channel.id] = discordChannel.id;
+
+                    // TODO: enable choosing whether to set these channels differently as well
+                    if (channel.isSystemChannel) {
+                        await guild.setSystemChannel(discordChannel.id, reason);
+                    }
+                    if (channel.isEmbedChannel) {
+                        await guild.setEmbed({enabled: true, channel:discordChannel.id}, reason)
+                    }
+                }
+            } else if (childrenImportType === 'select') {
+                for (let channelInfo of section.children) {
+                    let channel = guildChannelData[channelInfo.arrayIndex];
+                    console.log("looking at channel " + channel.name);
+
+                    let channelImportType = 'add';
+                    embed.fields = [];
+                    embed.addField(categoryChannel.name, getChannelCategoryChildrenText(categoryChannel.children), false);
+                    channelImportType = await awaitImportTypeSelection(bot, message, "Choose how to add channel:\n\t**" + channel.name + "**\n** **",
+                                                                        "Additive: Choose a category and add it to that category.",
+                                                                        "Merging: Choose another channel and overwrite its permissions and name. (Allows keeping channel contents!)",
+                                                                        "Discard: Do not import this channel.", embed, sentMessage,
+                                                                        "*Note:  If the channel is not placed in the imported category, permissions might not get imported correctly.*", false);
+
+                    console.log("channel selection was " + channelImportType)
+                    if (!(channelImportType === 'overwrite')) {
+                        let discordChannel = undefined;
+                        let channelData;
+                        console.log("building channel data")
+                        channelData = buildChannelData(bot, message, channel, roleIDMap, resultingChannels, channelsWithoutParent);
+
+                        let success = false;
+                        if (channelImportType === 'select') {
+                            let isVoice = (channel.type === 'voice');
+                            let discordChannel = await awaitRoleOrChannelSelection(bot, message, false, false, false, isVoice, false);
+                            if (discordChannel) {
+                                console.log("selected channel " + discordChannel.name + " to merge with")
+                                console.log("editing channel ")
+                                console.log(discordChannel)
+                                discordChannel = await discordChannel.edit(channelData, reason);
+                                console.log("edited channel is --------------------------")
+                                console.log(discordChannel)
+                                resultingChannels[channel.id] = discordChannel.id;
+                                success = true;
+                            }
+                            else console.log("didn't select a channel to merge with")
+                        }
+                        if (!success) {
+                            console.log("selecting channel category")
+                            let categoryChannel = await awaitRoleOrChannelSelection(bot, message, false, false, true, false, true);
+                            if (categoryChannel) console.log("found category channel " + categoryChannel.name)
+                            else console.log("didn't select a category channel")
+                            console.log("creating channel")
+                            discordChannel = await guild.createChannel(channel.name, channelData, reason);
+                            if (categoryChannel) discordChannel.setParent(categoryChannel.id);
+                            resultingChannels[channel.id] = discordChannel.id;
+                        }
+
+                        // TODO: enable choosing whether to set these channels differently as well
+                        if (channel.isSystemChannel) {
+                            await guild.setSystemChannel(discordChannel.id, reason);
+                        }
+                        if (channel.isEmbedChannel) {
+                            await guild.setEmbed({enabled: true, channel:discordChannel.id}, reason)
+                        }
+
+                    }
+
+                }
+            }
+
         }
-        if (channel.isEmbedChannel) {
-            await guild.setEmbed({enabled: true, channel:discordChannel.id}, reason)
+
+    }
+
+    console.log("getting to categoryless channels --------------")
+
+    for (let section of channelList) {
+        if (section.id == -1) { // now import the section-less channels
+            // TODO: offer the same selection as above!
+            // I have been coding for 13+ hours straight now, I don't have the nerves for this one as well. I shall implement it somewhen...
+            // add all channels!
+            for (let channelInfo of section.children) { // add all of them to the category channel
+                let channel = guildChannelData[channelInfo.arrayIndex];
+                let channelData = buildChannelData(bot, message, channel, roleIDMap, resultingChannels, channelsWithoutParent);
+                let discordChannel = await guild.createChannel(channel.name, channelData, reason);
+                resultingChannels[channel.id] = discordChannel.id;
+
+                // TODO: enable choosing whether to set these channels differently as well
+                if (channel.isSystemChannel) {
+                    await guild.setSystemChannel(discordChannel.id, reason);
+                }
+                if (channel.isEmbedChannel) {
+                    await guild.setEmbed({enabled: true, channel:discordChannel.id}, reason)
+                }
+            }
+
+            break;
         }
     }
+
+    console.log("getting to channels without parents ------------------")
 
     if (channelsWithoutParent.length > 0) {
         for (let channel of guildChannelData) {
