@@ -215,10 +215,12 @@ const saveServerLayout = async (bot, message, verbose=false) => {
     message.channel.send("There you go!", {files:[filename]});
 }
 
+const embedBaseColor = 0x84c3e0;
+
 const initImport = async (bot, message, url) => {
     let embed = new Discord.RichEmbed()
                            .setTitle("Importing Server Data")
-                           .setColor(0x84c3e0)
+                           .setColor(embedBaseColor)
                            .setDescription("Attempting to open the linked .json file...")
     let sentMessage = await message.channel.send(embed)
     loadServerLayout(bot, message, url, embed, sentMessage);
@@ -273,6 +275,54 @@ const clearChannels = async (bot, message) => {
     }
 }
 
+const getRoleListOfThisServer = (bot, message) => {
+    let roles = message.guild.roles;
+    let roleList = [];
+    for (let role of roles) {
+        role = role[1];
+        if (!role.managed && !(role.id === message.guild.defaultRole.id)) { // ignore integrated bot roles and @everyone
+            roleList.push("<@&" + role.id + ">"); // works even if role not mentionable, and in embeds it does not ping
+        }
+    }
+    return roleList;
+}
+
+const getRoleListOfImport = (guildData) => {
+    let roles = guildData.roles;
+    let roleList = [];
+    for (let role of roles) {
+        if (role.id > 0) { // ignore Apto's role and @everyone
+          let roleName = role.name;
+            if (roleName.length > 24) {
+                roleName = roleName.substring(0,21) + "...";
+            }
+            roleList.push(roleName);
+        }
+    }
+    return roleList;
+}
+
+const rolesToText = (roleNames, max) => {
+    let rolesText = "";
+    let numRoles = roleNames.length;
+    if (numRoles > 0) {
+        let additionalText = "";
+        let cutoff = numRoles;
+        if (numRoles > max) {
+            cutoff = max;
+            additionalText += "\nand " + (numRoles - cutoff) + " more.";
+        }
+        for (let i = 0; i < cutoff; i++) {
+            if (i > 0) rolesText += "\n";
+            rolesText += roleNames[i];
+        }
+        rolesText += additionalText;
+    } else {
+        rolesText = "*none*";
+    }
+    return rolesText;
+}
+
 const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     console.log(guildData);
     embed.setDescription(embed.description + "\nSuccess!\n\nChecking if the file is valid...");
@@ -290,6 +340,38 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     await sentMessage.edit(embed);
     console.log("calling buildServer")
     await importBaseServerInfo(bot, message, guildData, embed, sentMessage);
+
+    await sentMessage.clearReactions();
+
+    embed.setDescription("Importing roles!");
+    embed.fields = [];
+    let existingRoles = getRoleListOfThisServer(bot, message);
+    let existingRolesText = rolesToText(existingRoles, 40);
+    embed.addField("Current Roles:", existingRolesText, true);
+    let importingRoles = getRoleListOfImport(guildData);
+    let importingRolesText = rolesToText(importingRoles, 40);
+    embed.addField("Roles to Import:", importingRolesText, true);
+
+    await sentMessage.react(additive_import_emoji);
+    await sentMessage.react(selective_import_emoji);
+    await sentMessage.react(overwriting_import_emoji);
+
+    let importType = await awaitImportTypeSelection(bot, message, "Choose an Import Mode",
+                                                     "Additive: Keep existing roles and add the new roles.",
+                                                     "Specify: For each role, select whether to edit another role or just add it.",
+                                                     "Overwrite: Delete all current roles and import the new ones.", embed, sentMessage, "", false);
+
+    console.log("Found import Type: " + importType)
+    let selectForEachRole = false;
+    if (importType === 'select') {
+        selectForEachRole = true;
+    } else if (importType === 'overwrite') {
+        console.log("clearing roles")
+        await clearRoles(bot, message);
+    }
+    console.log("calling importRoles")
+    let resultingRoles = await importRoles(bot, message, guildData.roles, embed, sentMessage, selectForEachRole);
+
     /*console.log("clearing roles")
     await clearRoles(bot, message);
     console.log("clearning channels")
@@ -368,12 +450,17 @@ const checkDataValidity = (guildData) => {
 
 const import_emoji = "⬇";
 const keep_emoji = "⛔"
+const additive_import_emoji = "✳";
+const overwriting_import_emoji = "⚠";
+const selective_import_emoji = "↔";
 
 // returns true if we want to import, false if we keep
-const awaitUserSelection = async (bot, message, title, import_text, keep_text, embed, sentMessage, additional_text = "") => {
+const awaitKeepVsImport = async (bot, message, title, import_text, keep_text, embed, sentMessage, additional_text = "", clearFields = true) => {
     let importing = false;
-    embed.fields = []
-    embed.addField(title, import_emoji + ": " + import_text + "\n" + keep_emoji + ": " + keep_text + additional_text);
+    if (clearFields) embed.fields = [];
+    let text = import_emoji + ": " + import_text + "\n" + keep_emoji + ": " + keep_text;
+    if (!(additional_text === "")) text += "\n\n" + additional_text;
+    embed.addField(title, text);
     await sentMessage.edit(embed);
     const collectedReaction = await sentMessage.awaitReactions((reaction, user) =>
                                                                 (user.id === message.author.id) &&
@@ -387,7 +474,86 @@ const awaitUserSelection = async (bot, message, title, import_text, keep_text, e
     return importing;
 }
 
-// TODO: check for what data we overwrite and change
+// returns 'add', 'select' or 'overwrite' depending on which mode we selected
+const awaitImportTypeSelection = async (bot, message, title, additive_text, specify_text, overwrite_text, embed, sentMessage, additional_text = "", clearFields = true) => {
+    let import_type = 'add';
+    if (clearFields) embed.fields = [];
+    let text = additive_import_emoji + ": " + additive_text + "\n" + selective_import_emoji + ": " + specify_text + "\n" + overwriting_import_emoji + ": " + overwrite_text;
+    if (!(additional_text === "")) text += "\n\n" + additional_text;
+    embed.addField(title, text);
+    await sentMessage.edit(embed);
+    const collectedReaction = await sentMessage.awaitReactions((reaction, user) =>
+                                                                (user.id === message.author.id) &&
+                                                                (reaction.emoji.name === additive_import_emoji ||
+                                                                 reaction.emoji.name === selective_import_emoji ||
+                                                                 reaction.emoji.name === overwriting_import_emoji),
+                                                            {max: 1, time: 300000});
+    let reaction = collectedReaction.first();
+    if (reaction.emoji.name === selective_import_emoji) {
+        import_type = 'select';
+    } else if (reaction.emoji.name === overwriting_import_emoji) {
+        import_type = 'overwrite';
+    }
+    await reaction.remove(message.author.id);
+    return import_type;
+}
+
+const awaitRoleOrChannelSelection = async (bot, message, isRoleSelection=true, retrying=false) => {
+    let embed2 = new Discord.RichEmbed()
+    if (isRoleSelection) {
+        // TODO: add pages if more than 40 roles
+        let existingRoles = getRoleListOfThisServer(bot, message);
+        let existingRolesText = rolesToText(existingRoles, 40);
+        if (retrying) {
+            embed2.setDescription("⚠️ Could not find the specified role, please retry! ⚠️");
+        }
+        embed2.addField("Please select a role which to overwrite by typing its name, linking the role, or posting the role's ID:", existingRolesText)
+    } else {
+        if (retrying) embed2.setDescription("⚠️ Could not find the specified role, please retry! ⚠️");
+        embed2.addField("Please select a channel which to overwrite by typing its name, linking the channel, or posting the channel's ID:", "*(look at your channels for a selection)*")
+    }
+    embed2.setFooter("Type 'exit' or 'cancel' to quit this menu and simply add the role. (Additive Import).")
+    let sentMessage2 = await message.channel.send(embed2);
+    let reply = await message.channel.awaitMessages((response) => (response.author.id === message.author.id), {max: 1, time: 300000});
+    reply = reply.first();
+    let repliedMessage = reply.content.toLowerCase();
+    reply.delete(100);
+
+    if (repliedMessage === 'exit' || repliedMessage === 'cancel') {
+        return undefined;
+    }
+
+    // parse the reply
+    const numberRegexp = /(\d+)/g;
+    let match = numberRegexp.exec(repliedMessage); // check if the message has a number
+    let value = "";
+    let result = undefined; // our channel or role
+    if (match) { // found a number
+        value = match[1].toString(); // take the first number we found
+        if (isRoleSelection) {
+            result = message.guild.roles.get(value);
+        } else {
+            result = message.guild.channels.get(value);
+        }
+    }
+    if (!result) {
+        // found no valid role or channel id
+        if (isRoleSelection) {
+            result = message.guild.roles.find(role => role.name.toLowerCase() === repliedMessage);
+            console.log("Looking for a role of name " + repliedMessage + ", found:")
+            console.log(result)
+        } else {
+            result = message.guild.channels.find(channel => channel.name.toLowerCase() === repliedMessage);
+        }
+    }
+    await sentMessage2.delete();
+    if (!result) {
+        // still nothing found
+        return await awaitRoleOrChannelSelection(bot, message, isRoleSelection, true);
+    }
+    return result;
+}
+
 const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage) => {
     console.log("importing base server info")
     const reason = "Apto Server Layout Import";
@@ -397,7 +563,7 @@ const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage)
     await sentMessage.react(keep_emoji);
 
     if (!(guild.name === guildData.name)) {
-        let importing = await awaitUserSelection(bot, message, "Server Name:",
+        let importing = await awaitKeepVsImport(bot, message, "Server Name:",
                                                  "Import new name: ***" + guildData.name + "***",
                                                  "Keep old name: ***" + guild.name + "***", embed, sentMessage);
         if (importing) {
@@ -406,30 +572,30 @@ const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage)
         }
     }
     if (!(guild.region === guildData.region)) {
-        let importing = await awaitUserSelection(bot, message, "Server Region:",
+        let importing = await awaitKeepVsImport(bot, message, "Server Region:",
                                                  "Switch server region to: ***" + guildData.region + "***",
                                                  "Stay in this server's region: ***" + guild.region + "***", embed, sentMessage,
-                                                 "\n\n*Concerning the voice channels.*");
+                                                 "*Concerning the voice channels.*");
         if (importing) {
             console.log("\t- setting server region")
             await guild.setRegion(guildData.region, reason);
         }
     }
     if (!(guild.defaultMessageNotifications === guildData.defaultMessageNotifications)) {
-        let importing = await awaitUserSelection(bot, message, "Default Message Notifications:",
+        let importing = await awaitKeepVsImport(bot, message, "Default Message Notifications:",
                                                  "Import: ***" + guildData.defaultMessageNotifications + "***",
                                                  "Keep: ***" + guild.defaultMessageNotifications + "***", embed, sentMessage,
-                                                 "\n\n*ALL = all messages will notify users\nMENTIONS = only @mentions will ping users*");
+                                                 "*ALL = all messages will notify users\nMENTIONS = only @mentions will ping users*");
         if (importing) {
             console.log("\t- setting server notifications")
             await guild.setDefaultMessageNotifications(guildData.defaultMessageNotifications, reason);
         }
     }
     if (!(guild.explicitContentFilter == guildData.explicitContentFilter)) {
-        let importing = await awaitUserSelection(bot, message, "Explicit Content Filter:",
+        let importing = await awaitKeepVsImport(bot, message, "Explicit Content Filter:",
                                                  "Import: ***" + guildData.explicitContentFilter + "***",
                                                  "Keep: ***" + guild.explicitContentFilter + "***", embed, sentMessage,
-                                                 "\n\n*Will scan all messages of a given user group and automatically delete those with explicit content;" +
+                                                 "*Will scan all messages of a given user group and automatically delete those with explicit content;" +
                                                  "\nDISABLED = don't scan any\nMEMBERS_WITHOUT_ROLES = only filter messages from members without roles\nALL = scan all messages*");
         if (importing) {
             console.log("\t- setting server content filter")
@@ -437,10 +603,10 @@ const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage)
         }
     }
     if (!(guild.verificationLevel == guildData.verificationLevel)) {
-        let importing = await awaitUserSelection(bot, message, "Verification Level:",
+        let importing = await awaitKeepVsImport(bot, message, "Verification Level:",
                                                  "Import: ***" + guildData.verificationLevel + "***",
                                                  "Keep: ***" + guild.verificationLevel + "***", embed, sentMessage,
-                                                 "\n\n*Members must meet the following criteria before they can send messages to other server members " +
+                                                 "*Members must meet the following criteria before they can send messages to other server members " +
                                                  "or in text channels. Does not apply if these members have an assigned role." +
                                                  "\NONE = unrestricted\LOW = must have a verified email\MEDIUM = verified email and on Discord for longer than 5 minutes" +
                                                  "\nHIGH = verified email and on this Server for longer than 10 minutes\nVERY HIGH = must have a verified phone*");
@@ -453,17 +619,23 @@ const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage)
     console.log("\t- setting server features")
     guild.features = guildData.features;
 
-    if (guildData.afkTimeout) {
-        console.log("\t- setting server afk timeout")
-        await guild.setAFKTimeout(guildData.afkTimeout, reason);
+    if (guildData.afkTimeout && (!(guildData.afkTimeout === guild.afkTimeout))) {
+        let importing = await awaitKeepVsImport(bot, message, "AFK Timeout (in minutes):",
+                                                 "Import: ***" + (guildData.afkTimeout / 60) + " mins***",
+                                                 "Keep: ***" + (guild.afkTimeout / 60) + " mins***", embed, sentMessage,
+                                                 "*After how many minutes a user gets kicked from voice chat into an AFK channel, if one is specified.*");
+        if (importing) {
+            console.log("\t- setting server afk timeout")
+            await guild.setAFKTimeout(guildData.afkTimeout, reason);
+        }
     }
     // the following two can time out, therefore we only try to do them if we must
     if (guildData.iconURL && (!(guildData.iconURL === guild.iconURL))) {
         embed.setThumbnail(guildData.iconURL);
-        let importing = await awaitUserSelection(bot, message, "Server Icon:",
+        let importing = await awaitKeepVsImport(bot, message, "Server Icon:",
                                                  "Import: ***" + guildData.iconURL + "***",
                                                  "Keep current icon.", embed, sentMessage,
-                                                 "\n\n*Note: if you and me change the icon too often, we get a timer on it. If I get stuck here, that's why.*");
+                                                 "*Note: if you and me change the icon too often, we get a timer on it. If I get stuck here, that's why.*");
         embed.setThumbnail(undefined);
         await sentMessage.edit(embed);
         if (importing) {
@@ -473,10 +645,10 @@ const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage)
     }
     if (guildData.splashURL && (!(guildData.splashURL === guild.splashURL))) {
         embed.setThumbnail(guildData.splashURL);
-        let importing = await awaitUserSelection(bot, message, "Server Splash Screen:",
+        let importing = await awaitKeepVsImport(bot, message, "Server Splash Screen:",
                                                  "Import: ***" + guildData.splashURL + "***",
                                                  "Keep current splash screen.", embed, sentMessage,
-                                                 "\n\n*Note: Splash screens only show for Nitro boosted servers on Nitro level 1.\nThey are the background of your custom server invite link.*");
+                                                 "*Note: Splash screens only show for Nitro boosted servers on Nitro level 1.\nThey are the background of your custom server invite link.*");
         if (importing) {
             console.log("\t- setting server splash screen")
             await guild.setSplash(guildData.splashURL, reason);
@@ -485,14 +657,13 @@ const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage)
 }
 
 // TODO: role positioning if other roles already exist
-const importRoles = async (bot, message, guildRoleData) => {
+const importRoles = async (bot, message, guildRoleData, embed, sentMessage, selectImportType=false) => {
     // guildRoleData is guildData.roles, an array of objects that describe roles
     const reason = "Apto Role Import";
-    let updateMessage = await message.channel.send("Importing roles:");
     let guild = message.guild;
     let resultingRoles = {}; // map internal role ID to the role IDs of created roles
     for (let role of guildRoleData) {
-        updateMessage = await updateMessage.edit(updateMessage.content + "\nTrying to add role: " + role.name + "... ");
+
         if (role.id == -1) {
             // don't import Apto's role data -> we don't have permissions to set them
             let aptoGuildMember = await guild.members.get(bot.user.id);
@@ -508,40 +679,80 @@ const importRoles = async (bot, message, guildRoleData) => {
             }
             resultingRoles[role.id] = everyoneRole.id;
         } else {
-            console.log("creating role " + role.name)
-            //let discordRole = await guild.createRole(roleData, reason);
-            let discordRole = await guild.createRole({
-                                                      name: role.name,
-                                                      color: role.hexColor,
-                                                      hoist: role.hoist,
-                                                      mentionable: role.mentionable
-                                                     }, reason)
-                                                     .catch(e => {
-                                                         console.log("error on creating role!");
-                                                         console.log(e);
-                                                         message.channel.send("Could not create role *" + role.name + "*, please make sure I have the manage roles permission to do so and that the server did not reach the limit of 250 roles.");
-                                                     });
-            if (discordRole) {
-                console.log("\tcreation successful!")
-                resultingRoles[role.id] = discordRole.id;
-                console.log("\t- setting role permissions")
-                await discordRole.setPermissions(role.permissions)
-                    .catch(e => {
-                        console.log("error on setting permissions!");
-                        console.log(e);
-                        message.channel.send("Could not set __permissions__ of role *" + role.name + "*, please check these permissions yourself.");
-                    });
-                console.log("\t- setting role position to " + role.position)
-                await discordRole.setPosition(role.position)
-                    .catch(e => {
-                        console.log("error on setting position!");
-                        console.log(e);
-                        message.channel.send("Could not set the __position__ of role *" + role.name + "*, please go to Server Settings -> Roles to ensure that the roles are in the correct order.");
-                    });
-                console.log("\t--- DONE")
+            let actionDone = "";
+            let extraNotif = "";
+            let importType = 'add';
+            let roleToOverwrite = undefined;
+            if (selectImportType) {
+                embed.setColor(role.hexColor);
+                importType = await awaitImportTypeSelection(bot, message, "Choose how to add role:\n\t**" + role.name + "**\n** **",
+                                                                "Additive: Simply add the role.",
+                                                                "Edit: Choose an existing role to edit.",
+                                                                "Ignore: Do not add this role, but **be aware that some functionality might get lost**. *(Not advised)*",
+                                                                embed, sentMessage, "", true);
+                if (importType === 'select') {
+                    roleToOverwrite = await awaitRoleOrChannelSelection(bot, message, true, false);
+                }
             }
+            if (!(importType === 'overwrite')) { // bad naming there, but in our case 'overwrite' would mean "do not add this role"
+                let roleData = {
+                                name: role.name,
+                                color: role.hexColor,
+                                hoist: role.hoist,
+                                mentionable: role.mentionable
+                               }
+                let discordRole;
+                if (roleToOverwrite) {
+                    let oldRoleName = roleToOverwrite.name;
+                    console.log("editing role " + oldRoleName + " with data of imported role " + role.name);
+                    actionDone = "\n✅Sucessfully overwritten role *" + oldRoleName + "* with imported role *" + role.name + "*";
+                    discordRole = await roleToOverwrite.edit(roleData, reason).catch(e => {
+                        console.log("error on editing role! switching to additive import!");
+                        console.log(e);
+                        extraNotif = "⚠️Could not edit role *" + oldRoleName + "*, please make sure I have the permission to do so. Using additive import instead.";
+                    })
+                }
+                if (!discordRole) {
+                    console.log("creating role " + role.name)
+                    actionDone = "\n✅Sucessfully created role *" + role.name + "*";
+                    //let discordRole = await guild.createRole(roleData, reason);
+                    discordRole = await guild.createRole(roleData, reason)
+                                                             .catch(e => {
+                                                                 console.log("error on creating role!");
+                                                                 console.log(e);
+                                                                 actionDone = "\n⚠️Failed to create role *" + role.name + "*. Issue: Role limit (250) reached or missing permissions.";
+                                                              });
+                }
+                if (discordRole) {
+                    console.log("\tcreation/edit successful!")
+                    resultingRoles[role.id] = discordRole.id;
+                    console.log("\t- setting role permissions")
+                    await discordRole.setPermissions(role.permissions)
+                        .catch(e => {
+                            console.log("error on setting permissions!");
+                            console.log(e);
+                            actionDone = "\n⚠️Created role *" + role.name + "* but could not set role permissions. Please check these permissions yourself.";
+                        });
+                    console.log("\t- setting role position to " + role.position)
+                    await discordRole.setPosition(role.position)
+                        .catch(e => {
+                            console.log("error on setting position!");
+                            console.log(e);
+                            actionDone = "\n⚠️Created role *" + role.name + "*but could not set role position. Please go to Server Settings -> Roles to ensure that the roles are in the correct order.";
+                        });
+                    console.log("\t--- DONE")
+                }
+            } else {
+                actionDone = "\n❌Skipped the import of role *" + role.name + "*";
+            }
+            if (embed.description.length > 1900) {
+                // TODO: log all!
+                embed.setDescription("Importing Roles!")
+            }
+            embed.setColor(embedBaseColor);
+            embed.setDescription(embed.description + actionDone);
+            await sentMessage.edit(embed);
         }
-        updateMessage = await updateMessage.edit(updateMessage.content + " Done!");
     }
     return resultingRoles;
 }

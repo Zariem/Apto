@@ -19,7 +19,6 @@ const executeCommand = async (bot, message) => {
 
         if (command === "importServer") {
             serverLayout.initImport(bot, message, content[1]);
-            //serverLayout.load(bot, message, content[1]);
         }
 
         if (command === "clearRoles") {
