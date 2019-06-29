@@ -2,6 +2,7 @@
 const config = require('../config.json');
 const serverLayout = require('./server_layout.js');
 const cloner = require('./clone.js');
+const aptoMoji = require('./aptomoji.js');
 
 const executeCommand = async (bot, message) => {
 
@@ -33,6 +34,12 @@ const executeCommand = async (bot, message) => {
         if (command === "clone") {
             let query = content.slice(1).join(" ");
             cloner.clone(bot, message, query);
+        }
+
+        if (command === "aptomoji") {
+            let emojiName = content[1];
+            if (!emojiName) emojiName = "";
+            aptoMoji.sendEmoji(bot, message, emojiName);
         }
     }
 
