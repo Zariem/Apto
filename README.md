@@ -32,6 +32,7 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
   * Temporary banning and unbanning (done)
 * Cuteness overload:
   * Awesome art: added! (over 30 Aptomojis! All super cute! Must check out! Praise Puppetker and Sakurartsy for drawing them and lLyxander for voicing them!)
+<br>
 
 <h4 align="center">🔸 PLANNED FEATURES (There just was not enough time.) 🔸</h4>
 <br>
@@ -62,12 +63,13 @@ Command  |   Usage
 !unban | Unbans a (temp-)banned user. *(Only server Admins can use this command.)*
 !ping | Pong!
 !aptomoji | Check out over 30 custom designed emojis of Apto. They are super cute! Must see!
+<br>
 
 <h4 align="center">📥 BOT INVITE LINK 📥</h4>
 <br>
 
 [Discord Authorization Link](https://discordapp.com/oauth2/authorize?client_id=592803163250360320&scope=bot&permissions=8)
-
+<br>
 
 <h4 align="center">😎 CONTRIBUTORS 😎</h4>
 <br>
