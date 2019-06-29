@@ -4,7 +4,7 @@ const config = require('../config.json');
 const nameList = ["think", "fear", "cheer", "thumbsup", "fingerguns", "thumbup", "smile", "happy", "content", "explain",
                   "freeze", "warn", "tip", "shush", "fire", "burn", "kimmy", "dab", ":3", "sweat",
                   "ooo", "derp", "guilt", "bleh", "ehh", "shock", "wasntme", "pout", "annoyed", "cry",
-                  "sniff", "flirt", "wink", "blush", "grin", "snapto"]
+                  "sniff", "flirt", "wink", "blush", "grin", "snapto", "wumpto"]
 
 const help = (bot, message) => {
     let emojiNames = "random";
@@ -98,6 +98,8 @@ const postAptomoji = (bot, message, emojiName) => {
         embed.setImage("https://cdn.discordapp.com/attachments/592749834079961093/594316834187247617/image0.png")
     } else if (emojiName === "snapto") {
         embed.setImage("https://cdn.discordapp.com/attachments/592749834079961093/594323453222453259/snapto.png")
+    } else if (emojiName === "wumpto") {
+        embed.setImage("https://cdn.discordapp.com/attachments/592749834079961093/594355478599958528/fanart12.png")
     }
     message.channel.send(embed)
 }
