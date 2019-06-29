@@ -467,6 +467,12 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     console.log("calling importChannels")
     let resultingChannels = await importChannels(bot, message, guildData.channels, channelList, resultingRoles, embed, sentMessage, selectForEachChannel);
 
+    await waitToContinue(bot, message, embed, sentMessage);
+
+    await sentMessage.clearReactions();
+    await sentMessage.react(import_emoji);
+    await sentMessage.react(keep_emoji);
+
     let importing = await awaitKeepVsImport(bot, message, "Server Emojis:",
                                              "Import the other server's emojis (if any). (Additive Import!)",
                                              "Do not import emojis.", embed, sentMessage,
@@ -476,7 +482,11 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
         await importEmojis(bot, message, guildData.emojis, resultingRoles);
     }
 
-    let importing = await awaitKeepVsImport(bot, message, "Ban Data:",
+    await waitToContinue(bot, message, embed, sentMessage);
+    await sentMessage.react(import_emoji);
+    await sentMessage.react(keep_emoji);
+
+    importing = await awaitKeepVsImport(bot, message, "Ban Data:",
                                              "Import the other server's ban list?",
                                              "Do not import the other server's ban list.", embed, sentMessage,
                                              "*Note: Basically only useful if you wish to copy and/or backup your own servers.*");
@@ -484,6 +494,8 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
         console.log("importing bans")
         await importBans(bot, message, guildData.bans);
     }
+
+    message.channel.send("All done!");
 }
 
 const hasKeys = (obj, keys) => {
