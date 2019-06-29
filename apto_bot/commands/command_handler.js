@@ -30,14 +30,18 @@ const executeCommand = async (bot, message) => {
             if (!hasAdminPermissions) return message.channel.send("Only Admins can do that. Try it on your own server!");
             let argument = content[1];
             if (argument === "help") {
-                message.channel.send("Usage: `" + config.prefix + "importServer https://url.to.your/server.json`\n" +
+                let embed = new Discord.RichEmbed()
+                           .setTitle("Importing Server Data")
+                           .setColor(0x84c3e0)
+                embed.setDescription("Usage: `" + config.prefix + "importServer https://url.to.your/server.json`\n" +
                                      "Alternatively, use one of our templates:\n" +
                                      "`" + config.prefix + "importServer gameCompany` *for Game Company Discord Servers*\n" +
                                      "`" + config.prefix + "importServer artCommunity` *for Art Community Servers*\n" +
-                                     "`" + config.prefix + "importServer streamer` *for YouTube or Twitch streamers' Discord Servers*")
-                message.channel.send("*To use your own template, use the `!save` command in one of your servers, right click the file and select `Copy Link`.\n\n*" +
-                                     "Be aware that this command is a work in progress. Additive import works, but there are several things about this command that ashame me." +
-                                     "I just couldn't fix and/or implement them in the given timeframe.")
+                                     "`" + config.prefix + "importServer streamer` *for YouTube or Twitch streamers' Discord Servers")
+                embed.addField("💡Tip:💡", "To use your own template, use the `!save` command in one of your servers, right click the file and select `Copy Link`.\n\n*" +
+                                     "⚠️ *Be aware that this command is a work in progress. Additive and Overwriting Import types work, but there are several things about this command that " +
+                                     "I just couldn't fix and/or implement in the given timeframe.*")
+                return message.channel.send(embed);
             } else if (argument === "gameCompany") {
                 argument = "https://cdn.discordapp.com/attachments/593770598841188352/594250014721835008/server_game_company.json";
             } else if (argument === "artCommunity") {

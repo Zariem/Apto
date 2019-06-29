@@ -231,7 +231,8 @@ const loadServerLayout = async (bot, message, url, embed, sentMessage) => {
     if (!url || !(url.substr(url.length - 5) === ".json")) {
         embed.setDescription(embed.description + "\n\n⚠️No .json file found to open!⚠️\n" +
                              "*Please ensure that you provide a link to a valid server.json file that I created upon exporting a server.*\n\n" +
-                             "Usage: `" + config.prefix + "importServer https://url-to.your/server.json`\n*(This link is just an example)*")
+                             "Usage: `" + config.prefix + "importServer https://url-to.your/server.json`\n*(This link is just an example)*\n" +
+                             "For more info and templates, check out `" + config.prefix + "importServer help`")
              .addField("💡Tip:💡", "You can right-click the server file that I sent you upon exporting, and then click `Copy Link` to quickly get access to the link. " +
                                  "If you uploaded your own server.json file, you can also right click it and select `Copy Link` to get the link to the file.\n" +
                                  "Discord stores all uploaded files internally, it's quite useful.")
