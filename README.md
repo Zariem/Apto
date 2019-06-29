@@ -62,3 +62,6 @@ Command  |   Usage
 !unban | Unbans a (temp-)banned user. *(Only server Admins can use this command.)*
 !ping | Pong!
 !aptomoji | Check out over 30 custom designed emojis of Apto. They are super cute! Must see!
+
+# Bot Invite Link:
+<https://discordapp.com/oauth2/authorize?client_id=592803163250360320&scope=bot&permissions=8>
