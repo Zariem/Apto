@@ -63,12 +63,14 @@ Command  |   Usage
 !ping | Pong!
 !aptomoji | Check out over 30 custom designed emojis of Apto. They are super cute! Must see!
 
-<h2 align="left">🤖 Bot Invite Link 🤖</h2>
+<h4 align="center">📥 BOT INVITE LINK 📥</h4>
+<br>
 
-<https://discordapp.com/oauth2/authorize?client_id=592803163250360320&scope=bot&permissions=8>
+[Discord Authorization Link](https://discordapp.com/oauth2/authorize?client_id=592803163250360320&scope=bot&permissions=8)
 
 
-<h2 align="left">😎 Contributors 😎</h2>
+<h4 align="center">😎 CONTRIBUTORS 😎</h4>
+<br>
 
 **Programming**: Zariem#4244
 
