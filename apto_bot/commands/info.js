@@ -1,5 +1,6 @@
 const getRoleOrChannel = require('../util/get_role_or_channel.js');
 
+// Work in Progress
 const getRoleOrChannelInfo = (bot, message, roleOrChannel) => {
     let result = getRoleOrChannel(message.guild, roleOrChannel);
     if (result.type === 'role') {
