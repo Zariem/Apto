@@ -31,7 +31,7 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
 * Moderation action:
   * Temporary banning and unbanning (done)
 * Cuteness overload:
-  * Awesome art: added! (over 30 Aptomojis! All super cute! Must check out! Praise Puppetker and Sakurartsy for drawing them!)
+  * Awesome art: added! (over 30 Aptomojis! All super cute! Must check out! Praise Puppetker and Sakurartsy for drawing them and lLyxander for voicing them!)
 
 <h4 align="center">🔸 PLANNED FEATURES (There just was not enough time.) 🔸</h4>
 <br>
@@ -68,7 +68,11 @@ Command  |   Usage
 
 #<h2 align="left">😎 Contributors 😎</h2>
 **Programming**: Zariem#4244
+
 **Character Design & Lead Artist**: sakurartsy#1875
+
 **Management & Artist**: puppetker#5696
+
 **Layout & Helping Hand**: GlitchyLink#9904
+
 **Voice Acting & Server Templates**: Alexander (lLyxander)#2030
