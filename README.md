@@ -67,6 +67,7 @@ Command  |   Usage
 <https://discordapp.com/oauth2/authorize?client_id=592803163250360320&scope=bot&permissions=8>
 
 <h2 align="left">😎 Contributors 😎</h2>
+
 **Programming**: Zariem#4244
 
 **Character Design & Lead Artist**: sakurartsy#1875
