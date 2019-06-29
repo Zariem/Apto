@@ -8,17 +8,19 @@ const upkeep = require('./apto_bot/upkeep.js');
 const apto = new Discord.Client();
 
 // other files
-const commandHandler = require('./apto_bot/commands/command_handler.js')
-
+const commandHandler = require('./apto_bot/commands/command_handler.js');
+const database = require('./apto_bot/util/database_handler.js');
 
 apto.on('ready', () => {
     console.log("Apto is ready!");
 });
 
 apto.on('message', message => {
-
     // ignore messages sent by self or any other bot
     if (message.author.bot) return;
+
+    // check if there is anyone to unban (temp bans)
+    database.checkBans(apto);
 
     if (message.content.toLowerCase().startsWith(config.prefix)) {
         commandHandler.executeCommand(apto, message);

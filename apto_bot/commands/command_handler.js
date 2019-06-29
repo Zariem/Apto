@@ -3,6 +3,7 @@ const config = require('../config.json');
 const serverLayout = require('./server_layout.js');
 const cloner = require('./clone.js');
 const aptoMoji = require('./aptomoji.js');
+const moderation = require('./moderation.js');
 
 const executeCommand = async (bot, message) => {
 
@@ -25,6 +26,14 @@ const executeCommand = async (bot, message) => {
 
         if (command === "clearRoles") {
             serverLayout.clearRoles(bot, message);
+        }
+
+        if (command === "tempBan") {
+            moderation.tempBan(bot, message, content);
+        }
+
+        if (command === "unban") {
+            moderation.unban(bot, message, content);
         }
 
         if (command === "save") {
