@@ -32,7 +32,8 @@ const credits = (bot, message) => {
                            .setDescription("**Designed and implemented for Discord Hack Week 2019**\n" +
                                            "Work in progress. The product you see here may contain bugs and some unfinished features. The intro video lists features that we have " +
                                            "not found the time to implement. For all available features, use `" + config.prefix + "help`.")
-                           .addField("Programming:", "**Zariem#4244**")
+                           .addBlankField()
+                           .addField("Programming:", "**Zariem#4244** (team organisation, implementation of all the code, some help on character design)")
                            .addField("Artworks:", "**sakurartsy#1875** (character design, most Aptomojis, Wumpto fanart lines, intro video animation)\n" +
                                                   "**puppetker#5696** (some Aptomojis, Wumpto fanart colours, Apto voiceline script, server templates)")
                            .addField("Layout:", "**GlitchyLink#9904** (github page, appearance, helping out wherever needed)")

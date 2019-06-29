@@ -55,16 +55,25 @@ const executeCommand = async (bot, message) => {
 
         if (command === "tempBan") {
             if (!hasAdminPermissions) return message.channel.send("Only Admins can do that. Try it on your own server!");
+            if (!content[1] || content[1] === "help") {
+                return message.channel.send("Usage: `" + config.prefix + "tempban [userID|@user] 1 [d|day|days] 1 [h|hrs|hour|hours] 1 [m|min|minute|minutes]`");
+            }
             moderation.tempBan(bot, message, content);
         }
 
         if (command === "unban") {
             if (!hasAdminPermissions) return message.channel.send("Only Admins can do that. Try it on your own server!");
+            if (!content[1] || content[1] === "help") {
+                return message.channel.send("Usage: `" + config.prefix + "unban [userID|@user]`");
+            }
             moderation.unban(bot, message, content);
         }
 
         if (command === "clone") {
             if (!hasAdminPermissions) return message.channel.send("Only Admins can do that. Try it on your own server!");
+            if (!content[1] || content[1] === "help") {
+                return message.channel.send("Usage: `" + config.prefix + "clone (@role_mention|role_name|roleID|#channel_hashtag|channel_name|channelID)`");
+            }
             let query = content.slice(1).join(" ");
             cloner.clone(bot, message, query);
         }
@@ -77,7 +86,7 @@ const executeCommand = async (bot, message) => {
             help.credits(bot, message);
         }
 
-        if (command === "aptomoji") {
+        if (command === "aptomoji") { // help page is handled in there ;)
             let emojiName = content[1];
             if (!emojiName) emojiName = "";
             aptoMoji.sendEmoji(bot, message, emojiName);

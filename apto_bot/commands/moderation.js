@@ -10,7 +10,7 @@ const tempBan = async (bot, message, args) => {
         return;
     }
 
-    let regexp = /(\d*)\s*(?:d|day|days)\s*(\d*)\s*(?:h|hrs|hour|hours)\s*(\d*)\s*(?:m|min|minute|minutes)\s*(\d*)\s*/g
+    let regexp = /(\d*)\s*(?:d|day|days)\s*(\d*)\s*(?:h|hrs|hour|hours)\s*(\d*)\s*(?:m|min|mins|minute|minutes)\s*(\d*)\s*/g
 
     let timeArgument = args.slice(2).join(" ");
     console.log(timeArgument)

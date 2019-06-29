@@ -12,6 +12,11 @@ const commandHandler = require('./apto_bot/commands/command_handler.js');
 const database = require('./apto_bot/util/database_handler.js');
 
 apto.on('ready', () => {
+    let status = "PLAYING"
+    let statusMessage = "type " + config.prefix + "help to get started"
+
+    console.log(status + ": " + statusMessage);
+    apto.user.setPresence({ game: { name: statusMessage, type:status }, status: 'online' }).catch(console.error);
     console.log("Apto is ready!");
 });
 
