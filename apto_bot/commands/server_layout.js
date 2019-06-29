@@ -443,7 +443,7 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     await waitToContinue(bot, message, embed, sentMessage);
 
     // TODO: add handling if server templates are too large to fit a single embed!
-    embed.setDescription("Importing channels!");
+    embed.setDescription("Importing channels! WORK IN PROGRESS (selective/merging input is still buggy.)");
 
     await sentMessage.react(additive_import_emoji);
     await sentMessage.react(selective_import_emoji);
@@ -469,6 +469,8 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
 
     await waitToContinue(bot, message, embed, sentMessage);
 
+    embed.setDescription("Importing emojis!");
+
     await sentMessage.clearReactions();
     await sentMessage.react(import_emoji);
     await sentMessage.react(keep_emoji);
@@ -483,6 +485,8 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     }
 
     await waitToContinue(bot, message, embed, sentMessage);
+
+    embed.setDescription("Importing bans!");
     await sentMessage.react(import_emoji);
     await sentMessage.react(keep_emoji);
 
