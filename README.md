@@ -65,3 +65,10 @@ Command  |   Usage
 
 #<h2 align="left">🤖 Bot Invite Link 🤖</h2>
 <https://discordapp.com/oauth2/authorize?client_id=592803163250360320&scope=bot&permissions=8>
+
+#<h2 align="left">😎 Contributors 😎</h2>
+**Programming**: Zariem#4244
+**Character Design & Lead Artist**: sakurartsy#1875
+**Management & Artist**: puppetker#5696
+**Layout & Helping Hand**: GlitchyLink#9904
+**Voice Acting & Server Templates**: Alexander (lLyxander)#2030
