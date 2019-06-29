@@ -25,11 +25,14 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
 <br>
 
 * Import/export of server settings:
-  * Import/Export server layout
-  * In-server role cloning
-  * In-server channel cloning
+  * Import/Export server layout (additive and overwriting imports work, merging import is still buggy and a work in progress)
+  * In-server role cloning (done)
+  * In-server channel cloning (done)
+* Moderation action
+  * Temporary banning and unbanning (done)
+  * Awesome art: added! (over 30 Aptomojis! All super cute! Must check out! Praise Puppetker and Sakurartsy for drawing them!)
 
-<h4 align="center">🔸 PLANNED FEATURES 🔸</h4>
+<h4 align="center">🔸 PLANNED FEATURES (There just was not enough time.) 🔸</h4>
 <br>
 
 - [ ] Role check and listing, giving a rundown on permissions/descriptions as needed
@@ -37,7 +40,7 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
 - [ ] Lockdown mode, server-wide channel freezing
 - [ ] Admin role listing 
 - [ ] Booster role listing
-- [ ] Temporary muting/banning
+- [ ] Temporary muting
 - [ ] Bot-side role pinging function
 - [ ] Text- Image- Gif-only channels
 - [ ] (Password-protected channels)
@@ -49,7 +52,7 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
 
 Command  |   Usage
    ---   |   ---
-!test | Does things
-!test2 | Also does things
+!help | Lists the help page.
+!credits | Lists info on the bot's creators and links to this github page.
 
 *[This is placeholder, will update with actual commands]*
