@@ -21,7 +21,7 @@ Let Apto assist in creating a safe and enjoyable space for you and your communit
 
 <br></br>
 
-<h4 align="center">🔹 CURRENT / IN-PROGRESS FEATURES 🔹</h4>
+<h4 align="center">🔹 IMPLEMENTED AND IN-PROGRESS FEATURES 🔹</h4>
 <br>
 
 * Import/export of server settings:
