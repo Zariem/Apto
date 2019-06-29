@@ -17,7 +17,7 @@ It will also include a moderating function allowing temporary or permanent mutin
 
 Let Apto assist in creating a safe and enjoyable space for you and your community!
 
-[![Watch](https://i.imgur.com/t1pdcJ4.png)](https://www.youtube.com/watch?v=XSBeQxdEH0E&)
+[![Watch](https://i.imgur.com/t1pdcJ4.png)](https://www.youtube.com/watch?v=grlOYkeHPAA&)
 
 <br></br>
 
