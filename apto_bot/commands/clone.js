@@ -1,5 +1,5 @@
 const config = require('../config.json');
-const getRoleOrChannel = require('../util/get_role_or_channel.js')
+const getRoleOrChannel = require('../util/get_role_or_channel.js');
 
 const clone = async (bot, message, roleOrChannel) => {
     let result = getRoleOrChannel(message.guild, roleOrChannel);
