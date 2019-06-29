@@ -64,7 +64,9 @@ Command  |   Usage
 !aptomoji | Check out over 30 custom designed emojis of Apto. They are super cute! Must see!
 
 <h2 align="left">🤖 Bot Invite Link 🤖</h2>
+
 <https://discordapp.com/oauth2/authorize?client_id=592803163250360320&scope=bot&permissions=8>
+
 
 <h2 align="left">😎 Contributors 😎</h2>
 
