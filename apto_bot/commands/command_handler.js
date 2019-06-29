@@ -28,7 +28,24 @@ const executeCommand = async (bot, message) => {
 
         if (command === "importServer") {
             if (!hasAdminPermissions) return message.channel.send("Only Admins can do that. Try it on your own server!");
-            serverLayout.initImport(bot, message, content[1]);
+            let argument = content[1];
+            if (argument === "help") {
+                message.channel.send("Usage: `" + config.prefix + "importServer https://url.to.your/server.json`\n" +
+                                     "Alternatively, use one of our templates:\n" +
+                                     "`" + config.prefix + "importServer gameCompany` *for Game Company Discord Servers*\n" +
+                                     "`" + config.prefix + "importServer artCommunity` *for Art Community Servers*\n" +
+                                     "`" + config.prefix + "importServer streamer` *for YouTube or Twitch streamers' Discord Servers*")
+                message.channel.send("*To use your own template, use the `!save` command in one of your servers, right click the file and select `Copy Link`.\n\n*" +
+                                     "Be aware that this command is a work in progress. Additive import works, but there are several things about this command that ashame me." +
+                                     "I just couldn't fix and/or implement them in the given timeframe.")
+            } else if (argument === "gameCompany") {
+                argument = "https://cdn.discordapp.com/attachments/593770598841188352/594250014721835008/server_game_company.json";
+            } else if (argument === "artCommunity") {
+                argument = "https://cdn.discordapp.com/attachments/593770598841188352/594286432617758730/server_art_community.json";
+            } else if (argument === "streamer") {
+                argument = "https://cdn.discordapp.com/attachments/593770598841188352/594286733114474526/server_streamer.json";
+            }
+            serverLayout.initImport(bot, message, argument);
         }
 
         if (command === "save") {

@@ -392,7 +392,7 @@ const waitToContinue = async (bot, message, embed, sentMessage) => {
 }
 
 const buildServer = async (bot, message, guildData, embed, sentMessage) => {
-    /*console.log(guildData);
+    console.log(guildData);
     embed.setDescription(embed.description + "\nSuccess!\n\nChecking if the file is valid...");
     await sentMessage.edit(embed);
     let isValid = checkDataValidity(guildData);
@@ -411,7 +411,7 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     await importBaseServerInfo(bot, message, guildData, embed, sentMessage);
 
     await waitToContinue(bot, message, embed, sentMessage);
-    */
+
     embed.setDescription("Importing roles!");
     embed.fields = [];
     let existingRoles = getRoleListOfThisServer(bot, message);
@@ -467,11 +467,23 @@ const buildServer = async (bot, message, guildData, embed, sentMessage) => {
     console.log("calling importChannels")
     let resultingChannels = await importChannels(bot, message, guildData.channels, channelList, resultingRoles, embed, sentMessage, selectForEachChannel);
 
-    /*
-    console.log("calling importEmojis")
-    await importEmojis(bot, message, guildData.emojis, resultingRoles);
-    console.log("importing bans")
-    await importBans(bot, message, guildData.bans);*/
+    let importing = await awaitKeepVsImport(bot, message, "Server Emojis:",
+                                             "Import the other server's emojis (if any). (Additive Import!)",
+                                             "Do not import emojis.", embed, sentMessage,
+                                             "*Note: Bots cannot delete emojis, so if you add them every time you test a thing, you'll have many duplicates of the same emoji in there.*");
+    if (importing) {
+        console.log("calling importEmojis")
+        await importEmojis(bot, message, guildData.emojis, resultingRoles);
+    }
+
+    let importing = await awaitKeepVsImport(bot, message, "Ban Data:",
+                                             "Import the other server's ban list?",
+                                             "Do not import the other server's ban list.", embed, sentMessage,
+                                             "*Note: Basically only useful if you wish to copy and/or backup your own servers.*");
+    if (importing) {
+        console.log("importing bans")
+        await importBans(bot, message, guildData.bans);
+    }
 }
 
 const hasKeys = (obj, keys) => {
@@ -661,7 +673,7 @@ const awaitRoleOrChannelSelection = async (bot, message, isRoleSelection=true, r
 
 const importBaseServerInfo = async (bot, message, guildData, embed, sentMessage) => {
     console.log("importing base server info")
-    const reason = "Apto Server Layout Import";
+    const reason = "Apto Server Layout Import - WORK IN PROGRESS";
     let guild = message.guild;
     embed.setDescription(embed.description + "\n\n*Please react to this message to decide whether to import or not import the following:*")
     await sentMessage.react(import_emoji);
