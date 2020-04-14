@@ -4,7 +4,7 @@ const Discord = require('discord.js');
 // local config file
 const config = require('./apto_bot/config.json');
 const process = require('./process.json');
-const command_handler = require('./apto_bot/command_handler.js');
+const command_handler = require('./apto_bot/util/command_handler.js');
 
 
 // our bot client :D

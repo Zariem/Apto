@@ -1,12 +1,12 @@
 const Discord = require('discord.js');
 const fs = require('fs'); // file system utility
-const config = require('./config.json');
+const config = require('../config.json');
 
 var commands = new Discord.Collection();
 var aliases = new Map();
 
 const base_dir = './apto_bot/commands/';
-const require_dir = './commands/';
+const require_dir = '../commands/';
 
 // load the command files from the './commands' folder
 module.exports.load = async () => {
